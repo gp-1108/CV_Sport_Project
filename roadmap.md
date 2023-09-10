@@ -16,6 +16,4 @@ Simply log here the work is left to be done.
 * Add more constructors to the class
 
 ## Federico
-* Refactor the code and organize it in smaller functions
-* Comment the code
-* Find a way to merge the wrongly segmented regions (morphological operations, contours evaluation, etc)
+* Find a way to remove the wrongly segmented regions and fill the holes
