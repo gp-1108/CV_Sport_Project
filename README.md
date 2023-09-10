@@ -24,3 +24,6 @@ To run the program, run the following command from inside the build directory:
 Enrico D'Alberton - Player classification <br>
 Federico Gelain - Playing Field detection <br>
 Pietro Girotto - Player segmentation <br>
+
+## Other
+Have a look at the [Road Map](./roadmap.md) to log and remember what is left to do.
