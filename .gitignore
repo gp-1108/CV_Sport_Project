@@ -1,0 +1,7 @@
+datasets/
+build
+src/ignore
+first_run_2_gpu/
+runs/
+.vscode
+*.sif
