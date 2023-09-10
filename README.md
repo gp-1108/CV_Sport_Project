@@ -22,7 +22,7 @@ To run the program, run the following command from inside the build directory:
 
 ## Authors
 Enrico D'Alberton - Player classification <br>
-Federico Gelain - Playing Field detection <br>
+Federico Gelain - Playing Field detection and segmentation <br>
 Pietro Girotto - Player segmentation <br>
 
 ## Other
