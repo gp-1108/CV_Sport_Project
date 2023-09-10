@@ -4,6 +4,7 @@ Simply log here the work is left to be done.
 ## General
 * Integrate all the parts
 * Write the report
+* REMEMBER HEADER GUARDS
 
 ## Pietro
 * Refactor the code
@@ -12,3 +13,4 @@ Simply log here the work is left to be done.
 * Write the function for whole folder evaluation
 * Convert OCHuman to YOLO format and train both m and l models
 * Check large model performance
+* Add more constructors to the class
