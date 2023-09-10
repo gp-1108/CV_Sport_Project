@@ -5,3 +5,5 @@ first_run_2_gpu/
 runs/
 .vscode
 *.sif
+*.pt
+model_outputs/
