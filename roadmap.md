@@ -14,3 +14,6 @@ Simply log here the work is left to be done.
 * Convert OCHuman to YOLO format and train both m and l models
 * Check large model performance
 * Add more constructors to the class
+
+## Federico
+* Find a way to remove the wrongly segmented regions and fill the holes

@@ -7,3 +7,4 @@ runs/
 *.sif
 *.pt
 model_outputs/
+large_e100_b10/
