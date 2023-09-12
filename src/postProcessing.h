@@ -16,6 +16,6 @@
  * @param playerMask: reference of the Mat object containing the mask of the players (black pixels are background, non-black pixels are players) 
  * @return Mat object which represents the processed mask of the players
 */
-void postProcessing(cv::Mat& originalImage, cv::Mat& playerMask);
+cv::Mat postProcessing(cv::Mat& originalImage, cv::Mat& playerMask);
 
 #endif

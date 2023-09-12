@@ -65,6 +65,6 @@ cv::Mat postProcessing(cv::Mat& originalImage, cv::Mat& playerMask) {
       editedPlayerMask = editedPlayerMask + copyPlayerMask;
     }
   }
-  return editedMask;
+  return editedPlayerMask;
 
 }
