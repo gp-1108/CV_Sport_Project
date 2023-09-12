@@ -8,3 +8,4 @@ runs/
 *.pt
 model_outputs/
 large_e100_b10/
+medium_b-1_lvmhp_biggest_poly/
