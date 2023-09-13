@@ -5,10 +5,16 @@
 * @version 1.0
 */
 #include "playerAssignement.h"
+#include "postProcessing.h"
+#include "yolo.h"
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
 #include <tuple>
 #include <algorithm>
 #include <vector>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
 
 float silhouette(std::vector<std::tuple<int, int, int>> match, std::vector<std::vector<std::tuple<int, int, int>>> clusters, int k) {
     float silhouette = 0;
@@ -287,11 +293,13 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
       }
     }
     if(found) {
-      // Find the only bounding box of the player
-      std::vector<std::vector<cv::Point>> contours;
-      std::vector<cv::Vec4i> hierarchy;
-      cv::findContours(player_mask, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-      cv::Rect bounding_box = cv::boundingRect(contours[0]);
+      cv::imshow("Player", player_mask*100);
+      cv::waitKey(0);
+      // Select the area with color i and extract the bounding box
+      cv::Rect bounding_box = cv::boundingRect(player_mask);
+      //if(bounding_box.height*bounding_box.width < 100) { //TODO da rivedere
+      //  break;
+      //}
       cv::Mat player_bounding_box = original_image(bounding_box);
       // Apply gaussian blur
       cv::GaussianBlur(player_bounding_box, player_bounding_box, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
@@ -303,10 +311,13 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
       // Apply pyramid mean shift filtering
       cv::pyrMeanShiftFiltering(player_bounding_box, player_bounding_box, 10, 20, 2);
 
+      cv::imshow("Player", player_bounding_box);
+      cv::waitKey(0);
+
       // Color black all the pixels that are not part of the player
       for(int j = 0; j < player_bounding_box.rows; j++) {
         for(int k = 0; k < player_bounding_box.cols; k++) {
-          if(player_mask.at<uchar>(j, k) != i) {
+          if(player_mask.at<uchar>(j + bounding_box.y, k + bounding_box.x) != i) {
             player_bounding_box.at<cv::Vec3b>(j, k)[0] = 0;
             player_bounding_box.at<cv::Vec3b>(j, k)[1] = 0;
             player_bounding_box.at<cv::Vec3b>(j, k)[2] = 0;
@@ -347,12 +358,33 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
   }
 }
 
+void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership) {
 
-void assignToTeams(const std::string& output_folder_path, cv::Mat& original_image, cv::Mat& mask) {
+  // Save the RGB mask
+  std::string RGB_mask_path = output_folder_path + "/Masks/" + file_name + "_RGB_mask.png";
+  cv::imwrite(RGB_mask_path, RGB_mask);
+
+  // Save the BN mask
+  std::string BN_mask_path = output_folder_path + "/Masks/" + file_name + "_BN_mask.png";
+  cv::imwrite(BN_mask_path, BN_mask);
+
+  // Save the bounding boxes of the players
+  std::string coordinates_path = output_folder_path + "/Masks/" + file_name + "_bb.txt";
+  std::ofstream coordinates_file(coordinates_path);
+  for(int i = 0; i < players.size(); i++) {
+    coordinates_file << std::get<0>(players[i]).x << " " << std::get<0>(players[i]).y << " " << std::get<0>(players[i]).width << " " << std::get<0>(players[i]).height << team_membership[i] + 1 << std::endl;
+  }
+  coordinates_file.close();
+
+}
+
+void assignToTeams(const std::string& output_folder_path, std::string file_name, cv::Mat& original_image, cv::Mat& mask) {
   
   std::vector<std::tuple<cv::Rect, cv::Mat, int>> players; // Vector containing the Rect object of the bounding box of the player, the Mat object containing the image of the player and the colorID of the player in the mask
   std::vector<int> team_membership(players.size(), -1); 
   std::vector<std::tuple<int, int, int>> match;
+  cv::Mat RGB_mask = cv::Mat::zeros(mask.size(), CV_8UC3);
+  cv::Mat BN_mask = cv::Mat::zeros(mask.size(), CV_8UC1);
 
   localizePlayers(original_image, mask, players);
 
@@ -360,9 +392,9 @@ void assignToTeams(const std::string& output_folder_path, cv::Mat& original_imag
   
     // Compute average of the three channels
     std::vector<int> R, G, B;
-    for(int k = 0; k < image.rows; k++) {
-      for(int l = 0; l < image.cols; l++) {
-        cv::Vec3b pixel = image.at<cv::Vec3b>(k, l);
+    for(int k = 0; k < std::get<1>(players[i]).rows; k++) {
+      for(int l = 0; l < std::get<1>(players[i]).cols; l++) {
+        cv::Vec3b pixel = std::get<1>(players[i]).at<cv::Vec3b>(k, l);
         int b = pixel[0];
         int g = pixel[1];
         int r = pixel[2];
@@ -387,6 +419,8 @@ void assignToTeams(const std::string& output_folder_path, cv::Mat& original_imag
     G_average = G_average / G.size();
     B_average = B_average / B.size();
 
+    std::cout << "R: " << R_average << " G: " << G_average << " B: " << B_average << std::endl;
+
     match.push_back(std::make_tuple(R_average, G_average, B_average));
 
   }
@@ -396,11 +430,10 @@ void assignToTeams(const std::string& output_folder_path, cv::Mat& original_imag
   for(int k = 0; k < match.size(); k++) {
     for(int l = k + 1; l < match.size(); l++) {
       distance += sqrt(pow(std::get<0>(match[k]) - std::get<0>(match[l]), 2) + pow(std::get<1>(match[k]) - std::get<1>(match[l]), 2) + pow(std::get<2>(match[k]) - std::get<2>(match[l]), 2));
+  std::cout << "Distance: " << distance << std::endl;
     }
   }
   distance = distance / (match.size() * (match.size() - 1) / 2);
-  std::cout << "Mean distance: " << distance << std::endl;
-  mean_distance.push_back(distance);
 
   if(distance > 0) {
     std::cout << "K-Means" << std::endl;
@@ -462,11 +495,51 @@ void assignToTeams(const std::string& output_folder_path, cv::Mat& original_imag
 
   }
 
+  // For each player we color his mask with the color of his team based on the team_membership vector (0 is blue, 1 is red, 2 is yellow)
+  for(int i = 0; i < players.size(); i++) {
+    if(team_membership[i] == 0) {
+      // Color the mask of the player with blue
+      for(int j = 0; j < mask.rows; j++) {
+        for(int k = 0; k < mask.cols; k++) {
+          if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
+            RGB_mask.at<cv::Vec3b>(j, k)[0] = 255;
+            BN_mask.at<uchar>(j, k) = 1;
+          }
+        }
+      }
+    } else if(team_membership[i] == 1) {
+      // Color the mask of the player with red
+      for(int j = 0; j < mask.rows; j++) {
+        for(int k = 0; k < mask.cols; k++) {
+          if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
+            RGB_mask.at<cv::Vec3b>(j, k)[2] = 255;
+            BN_mask.at<uchar>(j, k) = 2;
+          }
+        }
+      }
+    } else if(team_membership[i] == 2) {
+      // Color the mask of the player with yellow
+      for(int j = 0; j < mask.rows; j++) {
+        for(int k = 0; k < mask.cols; k++) {
+          if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
+            RGB_mask.at<cv::Vec3b>(j, k)[0] = 255;
+            RGB_mask.at<cv::Vec3b>(j, k)[1] = 255;
+            BN_mask.at<uchar>(j, k) = 3;
+          }
+        }
+      }
+    }
+  }
+
+  saveOutput(output_folder_path, file_name, RGB_mask, BN_mask, players, team_membership);
 
 }
 
-void playerAssignement(const Yolov8Seg& yolo, const std::string& folder_path, const std::string& output_folder_path) {
+void playerAssignement(const std::string& model_path, const std::string& folder_path, const std::string& output_folder_path) {
   
+  // Model initialization
+  Yolov8Seg yolo(model_path);
+
   // Checking if the folders exist
   if (!cv::utils::fs::exists(folder_path)) {
     printf("The folder %s does not exist\n", folder_path.c_str());
@@ -478,7 +551,7 @@ void playerAssignement(const Yolov8Seg& yolo, const std::string& folder_path, co
     cv::utils::fs::createDirectories(output_folder_path);
   }
 
-  std::vector<cv::String> file_names; // The names of the files in the folder
+  std::vector<std::string> file_names; // The names of the files in the folder
   cv::glob(folder_path, file_names); // Getting the names of the files in the folder
 
   std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
@@ -494,10 +567,9 @@ void playerAssignement(const Yolov8Seg& yolo, const std::string& folder_path, co
     cv::Mat originalImage = cv::imread(file_names[i]);
 
     // Running the segmentation
-
     cv::Mat finalMask;
-    yolo.runSegmentation(originalImage, finalMask);   
+    yolo.runSegmentation(originalImage, finalMask);
     finalMask = postProcessing(originalImage, finalMask); //TODO modifica direttamente la reference
-    assignToTeams(output_folder_path, originalImage, finalMask);
+    assignToTeams(output_folder_path, file_names[i], originalImage, finalMask);
   }
 }
