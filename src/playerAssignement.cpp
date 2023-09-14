@@ -359,16 +359,19 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
 
 void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership) {
 
+  std::string img_name = file_name.substr(file_name.find_last_of("/") + 1);
+  img_name.erase(img_name.length() - 4);
+
   // Save the RGB mask
-  std::string RGB_mask_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_RGB_mask.png";
+  std::string RGB_mask_path = output_folder_path + "/Masks/" + img_name + "_RGB_mask.png";
   cv::imwrite(RGB_mask_path, RGB_mask);
 
   // Save the BN mask
-  std::string BN_mask_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_BN_mask.png";
+  std::string BN_mask_path = output_folder_path + "/Masks/" + img_name + "_BN_mask.png";
   cv::imwrite(BN_mask_path, BN_mask);
 
   // Save the bounding boxes of the players
-  std::string coordinates_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_bb.txt";
+  std::string coordinates_path = output_folder_path + "/Masks/" + img_name + "_bb.txt";
   std::ofstream coordinates_file(coordinates_path);
   for(int i = 0; i < players.size(); i++) {
     coordinates_file << std::get<0>(players[i]).x << " " << std::get<0>(players[i]).y << " " << std::get<0>(players[i]).width << " " << std::get<0>(players[i]).height << " " << team_membership[i] + 1 << std::endl;
