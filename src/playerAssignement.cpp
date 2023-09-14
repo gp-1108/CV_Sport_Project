@@ -5,7 +5,7 @@
 * @version 1.0
 */
 #include "playerAssignement.h"
-#include "postProcessing.h"
+#include "postProcessingYolo.h"
 #include "yolo.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
@@ -380,12 +380,29 @@ void saveOutput(const std::string& output_folder_path, const std::string& file_n
 
 }
 
-void assignToTeams(const std::string& output_folder_path, std::string file_name, cv::Mat& original_image, cv::Mat& mask) {
+void assignToTeams(const std::string& output_folder_path, std::string file_name, cv::Mat& original_image, cv::Mat& mask, cv::Mat& field_mask) {
   
   std::vector<std::tuple<cv::Rect, cv::Mat, int>> players; // Vector containing the Rect object of the bounding box of the player, the Mat object containing the image of the player and the colorID of the player in the mask
   std::vector<std::tuple<int, int, int>> match;
   cv::Mat RGB_mask = cv::Mat::zeros(mask.size(), CV_8UC3);
   cv::Mat BN_mask = cv::Mat::zeros(mask.size(), CV_8UC1);
+
+  // Copy the field_mask in the BN_mask
+  for(int i = 0; i < field_mask.rows; i++) {
+    for(int j = 0; j < field_mask.cols; j++) {
+      BN_mask.at<uchar>(i, j) = field_mask.at<uchar>(i, j);
+    }
+  }
+  // Copy the field_mask in the RGB_mask
+  for(int i = 0; i < field_mask.rows; i++) {
+    for(int j = 0; j < field_mask.cols; j++) {
+      if(field_mask.at<uchar>(i, j) == 3) {
+        RGB_mask.at<cv::Vec3b>(i, j)[0] = 0;
+        RGB_mask.at<cv::Vec3b>(i, j)[1] = 255;
+        RGB_mask.at<cv::Vec3b>(i, j)[2] = 0;
+      }
+    }
+  }
 
   localizePlayers(original_image, mask, players);
   
@@ -504,7 +521,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
       for(int j = 0; j < mask.rows; j++) {
         for(int k = 0; k < mask.cols; k++) {
           if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
-            RGB_mask.at<cv::Vec3b>(j, k)[0] = 255;
+            RGB_mask.at<cv::Vec3b>(j, k) = cv::Vec3b(255, 0, 0);
             BN_mask.at<uchar>(j, k) = 1;
           }
         }
@@ -514,7 +531,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
       for(int j = 0; j < mask.rows; j++) {
         for(int k = 0; k < mask.cols; k++) {
           if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
-            RGB_mask.at<cv::Vec3b>(j, k)[2] = 255;
+            RGB_mask.at<cv::Vec3b>(j, k) = cv::Vec3b(0, 0, 255);
             BN_mask.at<uchar>(j, k) = 2;
           }
         }
@@ -524,7 +541,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
       for(int j = 0; j < mask.rows; j++) {
         for(int k = 0; k < mask.cols; k++) {
           if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
-            RGB_mask.at<cv::Vec3b>(j, k)[0] = 255;
+            RGB_mask.at<cv::Vec3b>(j, k) = cv::Vec3b(255, 0, 0);
             BN_mask.at<uchar>(j, k) = 1;
           }
         }
@@ -536,41 +553,41 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
 
 }
 
-void playerAssignement(const std::string& model_path, const std::string& folder_path, const std::string& output_folder_path) {
-  
-  // Model initialization
-  Yolov8Seg yolo(model_path);
-
-  // Checking if the folders exist
-  if (!cv::utils::fs::exists(folder_path)) {
-    printf("The folder %s does not exist\n", folder_path.c_str());
-    return;
-  }
-  if (!cv::utils::fs::exists(output_folder_path)) {
-    printf("The folder %s does not exist\n", output_folder_path.c_str());
-    printf("Creating the folder %s\n", output_folder_path.c_str());
-    cv::utils::fs::createDirectories(output_folder_path);
-  }
-
-  std::vector<std::string> file_names; // The names of the files in the folder
-  cv::glob(folder_path, file_names); // Getting the names of the files in the folder
-
-  std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
-
-  for (int i = 0; i < file_names.size(); i++) {
-    std::cout << "Processing file " << file_names[i] << std::endl;
-
-    // Checking if the file is an image
-    if (file_names[i].find(".jpg") == std::string::npos && file_names[i].find(".png") == std::string::npos) {
-      continue;
-    }
-    // Reading the image
-    cv::Mat originalImage = cv::imread(file_names[i]);
-
-    // Running the segmentation
-    cv::Mat finalMask;
-    yolo.runSegmentation(originalImage, finalMask);
-    finalMask = postProcessing(originalImage, finalMask); //TODO modifica direttamente la reference
-    assignToTeams(output_folder_path, file_names[i], originalImage, finalMask);
-  }
-}
+//void playerAssignement(const std::string& model_path, const std::string& folder_path, const std::string& output_folder_path) {
+//  
+//  // Model initialization
+//  Yolov8Seg yolo(model_path);
+//
+//  // Checking if the folders exist
+//  if (!cv::utils::fs::exists(folder_path)) {
+//    printf("The folder %s does not exist\n", folder_path.c_str());
+//    return;
+//  }
+//  if (!cv::utils::fs::exists(output_folder_path)) {
+//    printf("The folder %s does not exist\n", output_folder_path.c_str());
+//    printf("Creating the folder %s\n", output_folder_path.c_str());
+//    cv::utils::fs::createDirectories(output_folder_path);
+//  }
+//
+//  std::vector<std::string> file_names; // The names of the files in the folder
+//  cv::glob(folder_path, file_names); // Getting the names of the files in the folder
+//
+//  std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
+//
+//  for (int i = 0; i < file_names.size(); i++) {
+//    std::cout << "Processing file " << file_names[i] << std::endl;
+//
+//    // Checking if the file is an image
+//    if (file_names[i].find(".jpg") == std::string::npos && file_names[i].find(".png") == std::string::npos) {
+//      continue;
+//    }
+//    // Reading the image
+//    cv::Mat originalImage = cv::imread(file_names[i]);
+//
+//    // Running the segmentation
+//    cv::Mat finalMask;
+//    yolo.runSegmentation(originalImage, finalMask);
+//    finalMask = postProcessingYolo(originalImage, finalMask); //TODO modifica direttamente la reference
+//    assignToTeams(output_folder_path, file_names[i], originalImage, finalMask);
+//  }
+//}

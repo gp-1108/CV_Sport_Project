@@ -12,10 +12,9 @@
 
 /**
  * @brief this function processes the output obtained from the neural network to improve the player segmentation
- * @param originalImage: reference of the Mat object containing the original colored image (BGR format)
  * @param playerMask: reference of the Mat object containing the mask of the players (black pixels are background, non-black pixels are players) 
  * @return Mat object which represents the processed mask of the players
 */
-cv::Mat postProcessing(cv::Mat& originalImage, cv::Mat& playerMask);
+cv::Mat postProcessingYolo(cv::Mat& playerMask);
 
 #endif

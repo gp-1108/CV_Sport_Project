@@ -4,10 +4,10 @@
 * @date ---
 * @version 1.0
 */
-#include "postProcessing.h"
+#include "postProcessingYolo.h"
 #include <opencv2/opencv.hpp>
 
-cv::Mat postProcessing(cv::Mat& originalImage, cv::Mat& playerMask) {
+cv::Mat postProcessingYolo(cv::Mat& playerMask) {
 
   cv::Mat editedPlayerMask = cv::Mat::zeros(playerMask.size(), CV_8UC1);
 
@@ -41,8 +41,8 @@ cv::Mat postProcessing(cv::Mat& originalImage, cv::Mat& playerMask) {
   for(int i = 1; i < 256; i++) {
     cv::Mat copyPlayerMask = playerMask.clone();
     bool found = false;
-    for(int j = 0; j < originalImage.rows; j++) {
-      for(int k = 0; k < originalImage.cols; k++) {
+    for(int j = 0; j < playerMask.rows; j++) {
+      for(int k = 0; k < playerMask.cols; k++) {
         if(playerMask.at<uchar>(j, k) == i) {
           found = true;
         }
