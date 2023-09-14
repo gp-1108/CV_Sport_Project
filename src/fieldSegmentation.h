@@ -37,20 +37,20 @@ std::vector<std::pair<cv::Vec3b, int>> computeCandidateColors(cv::Mat fieldImage
 void sortCandidateColors(const cv::Mat fieldImage, cv::Mat mask, std::vector<std::pair<cv::Vec3b, int>>& candidateColors);
 
 /**
- * @brief this function returns the image where each pixel classified as field is assigned the dominant color determined to be the field color, black otherwise
+ * @brief this function returns the image where each pixel classified as field is assigned the value 3, 0 otherwise
  * @param fieldImage: original fieldImage, in BGR format
  * @param candidateColors: array of pairs (candidateColor, frequency of candidate Color in the image)
  * @param distanceThreshold: value which determines if a certain pixels is considered part of the field or not (based on its intensity Euclidean distance from the field color)
  * @param areaThreshold: value to decide if a certain candidate can be considered the field color or not
- * @return Mat where each pixel classified as field is assigned the dominant color determined to be the field color, black otherwise
+ * @return Mat where each pixel classified as field is assigned the value 3, 0 otherwise
 */
-cv::Mat computeColoredFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec3b, int>> candidateColors, int distanceThreshold, double areaThreshold);
+cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec3b, int>> candidateColors, int distanceThreshold, double areaThreshold);
 
 /**
  * @brief some post processing ideas to improve the result given by just comparing the color of pixels compared to the one of the field
  * @param fieldImage: BGR image which comes as the result of segmentation considering only the intensity distance between pixels and the field color
 */
-void postProcessing(cv::Mat& fieldImage);
+void fieldPostProcessing(cv::Mat& fieldImage);
 
 
 #endif

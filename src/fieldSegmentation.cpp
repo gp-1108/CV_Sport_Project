@@ -21,6 +21,7 @@ cv::Mat fieldDetectionAndSegmentation(const cv::Mat fieldImage) {
         }   
     }
 
+
     //2 works the best, in terms of accuracy and performance
     int peaksPerChannel = 2;
     std::vector<std::pair<cv::Vec3b, int>> candidateColors = computeCandidateColors(fieldImage, mask, peaksPerChannel);
@@ -33,15 +34,12 @@ cv::Mat fieldDetectionAndSegmentation(const cv::Mat fieldImage) {
     int distanceThreshold = 65; //threshold for the intensity Euclidean distance
     double areaThreshold = 0.15 * fieldImage.rows * fieldImage.cols; //arbitrary area requirement for a candidate color to be the field color
 
-    cv::Mat coloredFieldMask = computeColoredFieldMask(fieldImage, candidateColors, distanceThreshold, areaThreshold);
-
-    //cv::imshow("Result", coloredFieldMask);
-    //cv::waitKey(0);
+    cv::Mat fieldMask = computeFieldMask(fieldImage, candidateColors, distanceThreshold, areaThreshold);
 
     //WORK IN PROGRESS: for now it doesn't modify the image, but simply does some things that can be seen from the imshows
-    //postProcessing(coloredFieldMask);
+    //fieldPostProcessing(fieldMask);
 
-    return coloredFieldMask;
+    return fieldMask;
 }
 
 std::vector<std::pair<cv::Vec3b, int>> computeCandidateColors(cv::Mat fieldImage, cv::Mat mask, int l) {
@@ -213,7 +211,7 @@ void sortCandidateColors(const cv::Mat fieldImage, cv::Mat mask, std::vector<std
     });
 }
 
-cv::Mat computeColoredFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec3b, int>> candidateColors, int distanceThreshold, double areaThreshold) {
+cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec3b, int>> candidateColors, int distanceThreshold, double areaThreshold) {
     /*
      * now comes the actual computation of the field color. For each one of the candidates computed before, a binary mask is computed in this way:
      * if the pixel in the image has an intensity Euclidean distance smaller than a certain threshold, then set its mask value to 255,
@@ -257,7 +255,7 @@ cv::Mat computeColoredFieldMask(const cv::Mat fieldImage, std::vector<std::pair<
                 
                 if(dist < distanceThreshold){
                     coloredFieldMask.at<cv::Vec3b>(i,j) = dominantColor;
-                    binaryFieldMask.at<uchar>(i,j) = 255;
+                    binaryFieldMask.at<uchar>(i,j) = 3;
                     
                     //coordx += i;
                     //coordy += j;
@@ -310,7 +308,7 @@ cv::Mat computeColoredFieldMask(const cv::Mat fieldImage, std::vector<std::pair<
             
                 if(dist < distanceThreshold){
                     coloredFieldMask.at<cv::Vec3b>(i,j) = dominantColor;
-                    binaryFieldMask.at<uchar>(i,j) = 255;
+                    binaryFieldMask.at<uchar>(i,j) = 3;
                     
                     //coordx += i;
                     //coordy += j;
@@ -320,7 +318,10 @@ cv::Mat computeColoredFieldMask(const cv::Mat fieldImage, std::vector<std::pair<
         }
     }
 
-    return coloredFieldMask;
+    //cv::imshow("Colored field mask", coloredFieldMask);
+    //cv::waitKey(0);
+
+    return binaryFieldMask;
 }
 
 void postProcessing(cv::Mat& fieldImage) {

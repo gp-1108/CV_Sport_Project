@@ -19,8 +19,8 @@ void sceneAnalyzer(Yolov8Seg& yolo, const std::string& output_folder_path, const
   cv::Mat field_mask;
   field_mask = fieldDetectionAndSegmentation(original_image);
   // Turn field_mask from BGR to binary 
-  cv::cvtColor(field_mask, field_mask, cv::COLOR_BGR2GRAY);
-  cv::threshold(field_mask, field_mask, 0, 3, cv::THRESH_BINARY); //TODO controllare
+  //cv::cvtColor(field_mask, field_mask, cv::COLOR_BGR2GRAY);
+  //cv::threshold(field_mask, field_mask, 0, 3, cv::THRESH_BINARY); //TODO controllare
 
   // Running the segmentation
   cv::Mat processed_mask;
