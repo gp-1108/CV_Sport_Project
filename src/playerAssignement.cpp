@@ -294,14 +294,14 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
       }
     }
     if(found) {
+
       // Select the area with color i and extract the bounding box
       cv::Rect bounding_box = cv::boundingRect(player_mask);
-      //if(bounding_box.height*bounding_box.width < 100) { //TODO da rivedere
-      //  break;
-      //}
+
       // Draw the bounding box on the original image
       cv::rectangle(original_image_copy, bounding_box, cv::Scalar(0, 255, 0), 2);
       cv::Mat player_bounding_box = original_image_copy(bounding_box);
+
       // Apply gaussian blur
       cv::GaussianBlur(player_bounding_box, player_bounding_box, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
       cv::GaussianBlur(player_bounding_box, player_bounding_box, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
@@ -322,21 +322,20 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
           }
         }
       }
-      cv::imshow("player_bounding_box", player_bounding_box);
-      cv::waitKey(0);
+
       players.push_back(std::make_tuple(bounding_box, player_bounding_box, i));
     }
 
   }
 }
 
-void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int> team_membership) {
+void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int>& team_membership) {
   for(int i = 0; i < clusters.size(); i++) {
     for(int j = 0; j < clusters[i].size(); j++) {
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k]) && std::get<2>(clusters[i][j]) == std::get<2>(match[k])) {
-          std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
+          //std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
           team_membership[k] = i;
         }
       }
@@ -344,13 +343,13 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters,
   }
 }
 
-void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int> team_membership) {
+void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int>& team_membership) {
   for(int i = 0; i < clusters.size(); i++) {
     for(int j = 0; j < clusters[i].size(); j++) {
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k])) {
-          std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
+          //std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
           team_membership[k] = i;
         }
       }
@@ -361,18 +360,18 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
 void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership) {
 
   // Save the RGB mask
-  std::string RGB_mask_path = output_folder_path + "/Masks/" + file_name + "_RGB_mask.png";
+  std::string RGB_mask_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_RGB_mask.png";
   cv::imwrite(RGB_mask_path, RGB_mask);
 
   // Save the BN mask
-  std::string BN_mask_path = output_folder_path + "/Masks/" + file_name + "_BN_mask.png";
+  std::string BN_mask_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_BN_mask.png";
   cv::imwrite(BN_mask_path, BN_mask);
 
   // Save the bounding boxes of the players
-  std::string coordinates_path = output_folder_path + "/Masks/" + file_name + "_bb.txt";
+  std::string coordinates_path = output_folder_path + "/Masks/" + file_name.substr(file_name.find_last_of("/") + 1) + "_bb.txt";
   std::ofstream coordinates_file(coordinates_path);
   for(int i = 0; i < players.size(); i++) {
-    coordinates_file << std::get<0>(players[i]).x << " " << std::get<0>(players[i]).y << " " << std::get<0>(players[i]).width << " " << std::get<0>(players[i]).height << team_membership[i] + 1 << std::endl;
+    coordinates_file << std::get<0>(players[i]).x << " " << std::get<0>(players[i]).y << " " << std::get<0>(players[i]).width << " " << std::get<0>(players[i]).height << " " << team_membership[i] + 1 << std::endl;
   }
   coordinates_file.close();
 
@@ -381,12 +380,13 @@ void saveOutput(const std::string& output_folder_path, const std::string& file_n
 void assignToTeams(const std::string& output_folder_path, std::string file_name, cv::Mat& original_image, cv::Mat& mask) {
   
   std::vector<std::tuple<cv::Rect, cv::Mat, int>> players; // Vector containing the Rect object of the bounding box of the player, the Mat object containing the image of the player and the colorID of the player in the mask
-  std::vector<int> team_membership(players.size(), -1); 
   std::vector<std::tuple<int, int, int>> match;
   cv::Mat RGB_mask = cv::Mat::zeros(mask.size(), CV_8UC3);
   cv::Mat BN_mask = cv::Mat::zeros(mask.size(), CV_8UC1);
 
   localizePlayers(original_image, mask, players);
+  
+  std::vector<int> team_membership(players.size(), -1);
 
   for(int i = 0; i < players.size(); i++) {
   
@@ -398,7 +398,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
         int b = pixel[0];
         int g = pixel[1];
         int r = pixel[2];
-        if(r < 10 || g < 10 || b < 10) //TODO controlla quesste threshold
+        if(r < 10 || g < 10 || b < 10) //TODO controlla queste threshold
           continue;
         R.push_back(r);
         G.push_back(g);
@@ -419,8 +419,6 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     G_average = G_average / G.size();
     B_average = B_average / B.size();
 
-    std::cout << "R: " << R_average << " G: " << G_average << " B: " << B_average << std::endl;
-
     match.push_back(std::make_tuple(R_average, G_average, B_average));
 
   }
@@ -430,13 +428,12 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
   for(int k = 0; k < match.size(); k++) {
     for(int l = k + 1; l < match.size(); l++) {
       distance += sqrt(pow(std::get<0>(match[k]) - std::get<0>(match[l]), 2) + pow(std::get<1>(match[k]) - std::get<1>(match[l]), 2) + pow(std::get<2>(match[k]) - std::get<2>(match[l]), 2));
-  std::cout << "Distance: " << distance << std::endl;
+  //std::cout << "Distance: " << distance << std::endl;
     }
   }
   distance = distance / (match.size() * (match.size() - 1) / 2);
 
   if(distance > 0) {
-    std::cout << "K-Means" << std::endl;
     // Create a matchGB vector
     std::vector<std::tuple<int, int>> matchGB;
     for(int k = 0; k < match.size(); k++) {
@@ -472,23 +469,25 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     std::cout << "Silhouette GB k=3: " << silGBk3 << std::endl;
     std::cout << "Silhouette RG k=2: " << silRGk2 << std::endl;
     std::cout << "Silhouette RG k=3: " << silRGk3 << std::endl;
-  
-    if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == sil3dk2) {
+
+    float max_silhouette = findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3);
+
+    if(max_silhouette == sil3dk2) {
       std::cout << "3d k=2" << std::endl;
       parseClusters(clusters3dk2, match, team_membership);
-    } else if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == sil3dk3) {
+    } else if(max_silhouette == sil3dk3) {
       std::cout << "3d k=3" << std::endl;
       parseClusters(clusters3dk3, match, team_membership);
-    } else if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == silGBk2) {
+    } else if(max_silhouette == silGBk2) {
       std::cout << "GB k=2" << std::endl;
       parseClusters(clustersGBk2, matchGB, team_membership);
-    } else if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == silGBk3) {
+    } else if(max_silhouette == silGBk3) {
       std::cout << "GB k=3" << std::endl;
       parseClusters(clustersGBk3, matchGB, team_membership);
-    } else if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == silRGk2) {
+    } else if(max_silhouette == silRGk2) {
       std::cout << "RG k=2" << std::endl;
       parseClusters(clustersGRk2, matchRG, team_membership);
-    } else if(findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3) == silRGk3) {
+    } else if(max_silhouette == silRGk3) {
       std::cout << "RG k=3" << std::endl;
       parseClusters(clustersGRk3, matchRG, team_membership);
     }
@@ -517,14 +516,13 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
           }
         }
       }
-    } else if(team_membership[i] == 2) {
-      // Color the mask of the player with yellow
+    } else if(team_membership[i] == 2) { //TODO TODO TODO sistemare la questione arbitro
+      // TODO Color the mask of the player with yellow
       for(int j = 0; j < mask.rows; j++) {
         for(int k = 0; k < mask.cols; k++) {
           if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
             RGB_mask.at<cv::Vec3b>(j, k)[0] = 255;
-            RGB_mask.at<cv::Vec3b>(j, k)[1] = 255;
-            BN_mask.at<uchar>(j, k) = 3;
+            BN_mask.at<uchar>(j, k) = 1;
           }
         }
       }
@@ -557,7 +555,7 @@ void playerAssignement(const std::string& model_path, const std::string& folder_
   std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
 
   for (int i = 0; i < file_names.size(); i++) {
-    std::printf("Processing file %d/%ld\n", i + 1, file_names.size());
+    std::cout << "Processing file " << file_names[i] << std::endl;
 
     // Checking if the file is an image
     if (file_names[i].find(".jpg") == std::string::npos && file_names[i].find(".png") == std::string::npos) {
