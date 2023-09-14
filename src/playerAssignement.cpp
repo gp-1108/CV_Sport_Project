@@ -281,6 +281,7 @@ float findMax(float a, float b, float c, float d, float e, float f) {
 void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players) {
   for(int i = 1; i < 256; i++) {
     cv::Mat player_mask = mask.clone();
+    cv::Mat original_image_copy = original_image.clone();
     bool found = false;
     for(int j = 0; j < original_image.rows; j++) {
       for(int k = 0; k < original_image.cols; k++) {
@@ -293,14 +294,14 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
       }
     }
     if(found) {
-      cv::imshow("Player", player_mask*100);
-      cv::waitKey(0);
       // Select the area with color i and extract the bounding box
       cv::Rect bounding_box = cv::boundingRect(player_mask);
       //if(bounding_box.height*bounding_box.width < 100) { //TODO da rivedere
       //  break;
       //}
-      cv::Mat player_bounding_box = original_image(bounding_box);
+      // Draw the bounding box on the original image
+      cv::rectangle(original_image_copy, bounding_box, cv::Scalar(0, 255, 0), 2);
+      cv::Mat player_bounding_box = original_image_copy(bounding_box);
       // Apply gaussian blur
       cv::GaussianBlur(player_bounding_box, player_bounding_box, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
       cv::GaussianBlur(player_bounding_box, player_bounding_box, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
@@ -310,9 +311,6 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
 
       // Apply pyramid mean shift filtering
       cv::pyrMeanShiftFiltering(player_bounding_box, player_bounding_box, 10, 20, 2);
-
-      cv::imshow("Player", player_bounding_box);
-      cv::waitKey(0);
 
       // Color black all the pixels that are not part of the player
       for(int j = 0; j < player_bounding_box.rows; j++) {
@@ -324,6 +322,8 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
           }
         }
       }
+      cv::imshow("player_bounding_box", player_bounding_box);
+      cv::waitKey(0);
       players.push_back(std::make_tuple(bounding_box, player_bounding_box, i));
     }
 
