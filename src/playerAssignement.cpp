@@ -251,7 +251,7 @@ std::vector<std::vector<std::tuple<int,int>>> k_means(std::vector<std::tuple<int
 
 }
 
-float findMax(float a, float b, float c, float d, float e, float f) {
+float findMax(float a, float b, float c) {
   float maxVal = a;
 
   if(b > maxVal) {
@@ -260,18 +260,6 @@ float findMax(float a, float b, float c, float d, float e, float f) {
 
   if(c > maxVal) {
     maxVal = c;
-  }
-
-  if(d > maxVal) {
-    maxVal = d;
-  }
-
-  if(e > maxVal) {
-    maxVal = e;
-  }
-
-  if(f > maxVal) {
-    maxVal = f;
   }
 
   return maxVal;
@@ -469,47 +457,29 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     }
 
     std::vector<std::vector<std::tuple<int, int, int>>> clusters3dk2 = k_means(match, 2);
-    std::vector<std::vector<std::tuple<int, int, int>>> clusters3dk3 = k_means(match, 3);
     std::vector<std::vector<std::tuple<int, int>>> clustersGBk2 = k_means(matchGB, 2);
-    std::vector<std::vector<std::tuple<int, int>>> clustersGBk3 = k_means(matchGB, 3);
     std::vector<std::vector<std::tuple<int, int>>> clustersGRk2 = k_means(matchRG, 2);
-    std::vector<std::vector<std::tuple<int, int>>> clustersGRk3 = k_means(matchRG, 3);
 
     float sil3dk2 = silhouette(match, clusters3dk2, 2);
-    float sil3dk3 = silhouette(match, clusters3dk3, 3);
     float silGBk2 = silhouette(matchGB, clustersGBk2, 2);
-    float silGBk3 = silhouette(matchGB, clustersGBk3, 3);
     float silRGk2 = silhouette(matchRG, clustersGRk2, 2);
-    float silRGk3 = silhouette(matchRG, clustersGRk3, 3);
 
     // Print the min silhouette value
     std::cout << "Silhouette 3d k=2: " << sil3dk2 << std::endl;
-    std::cout << "Silhouette 3d k=3: " << sil3dk3 << std::endl;
     std::cout << "Silhouette GB k=2: " << silGBk2 << std::endl;
-    std::cout << "Silhouette GB k=3: " << silGBk3 << std::endl;
     std::cout << "Silhouette RG k=2: " << silRGk2 << std::endl;
-    std::cout << "Silhouette RG k=3: " << silRGk3 << std::endl;
 
-    float max_silhouette = findMax(sil3dk2, sil3dk3, silGBk2, silGBk3, silRGk2, silRGk3);
+    float max_silhouette = findMax(sil3dk2, silGBk2, silRGk2);
 
     if(max_silhouette == sil3dk2) {
       std::cout << "3d k=2" << std::endl;
       parseClusters(clusters3dk2, match, team_membership);
-    } else if(max_silhouette == sil3dk3) {
-      std::cout << "3d k=3" << std::endl;
-      parseClusters(clusters3dk3, match, team_membership);
     } else if(max_silhouette == silGBk2) {
       std::cout << "GB k=2" << std::endl;
       parseClusters(clustersGBk2, matchGB, team_membership);
-    } else if(max_silhouette == silGBk3) {
-      std::cout << "GB k=3" << std::endl;
-      parseClusters(clustersGBk3, matchGB, team_membership);
     } else if(max_silhouette == silRGk2) {
       std::cout << "RG k=2" << std::endl;
       parseClusters(clustersGRk2, matchRG, team_membership);
-    } else if(max_silhouette == silRGk3) {
-      std::cout << "RG k=3" << std::endl;
-      parseClusters(clustersGRk3, matchRG, team_membership);
     }
 
   }
@@ -536,58 +506,9 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
           }
         }
       }
-    } else if(team_membership[i] == 2) { //TODO TODO TODO sistemare la questione arbitro
-      // TODO Color the mask of the player with yellow
-      for(int j = 0; j < mask.rows; j++) {
-        for(int k = 0; k < mask.cols; k++) {
-          if(mask.at<uchar>(j, k) == std::get<2>(players[i])) {
-            RGB_mask.at<cv::Vec3b>(j, k) = cv::Vec3b(255, 0, 0);
-            BN_mask.at<uchar>(j, k) = 1;
-          }
-        }
-      }
     }
   }
 
   saveOutput(output_folder_path, file_name, RGB_mask, BN_mask, players, team_membership);
 
 }
-
-//void playerAssignement(const std::string& model_path, const std::string& folder_path, const std::string& output_folder_path) {
-//  
-//  // Model initialization
-//  Yolov8Seg yolo(model_path);
-//
-//  // Checking if the folders exist
-//  if (!cv::utils::fs::exists(folder_path)) {
-//    printf("The folder %s does not exist\n", folder_path.c_str());
-//    return;
-//  }
-//  if (!cv::utils::fs::exists(output_folder_path)) {
-//    printf("The folder %s does not exist\n", output_folder_path.c_str());
-//    printf("Creating the folder %s\n", output_folder_path.c_str());
-//    cv::utils::fs::createDirectories(output_folder_path);
-//  }
-//
-//  std::vector<std::string> file_names; // The names of the files in the folder
-//  cv::glob(folder_path, file_names); // Getting the names of the files in the folder
-//
-//  std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
-//
-//  for (int i = 0; i < file_names.size(); i++) {
-//    std::cout << "Processing file " << file_names[i] << std::endl;
-//
-//    // Checking if the file is an image
-//    if (file_names[i].find(".jpg") == std::string::npos && file_names[i].find(".png") == std::string::npos) {
-//      continue;
-//    }
-//    // Reading the image
-//    cv::Mat originalImage = cv::imread(file_names[i]);
-//
-//    // Running the segmentation
-//    cv::Mat finalMask;
-//    yolo.runSegmentation(originalImage, finalMask);
-//    finalMask = postProcessingYolo(originalImage, finalMask); //TODO modifica direttamente la reference
-//    assignToTeams(output_folder_path, file_names[i], originalImage, finalMask);
-//  }
-//}
