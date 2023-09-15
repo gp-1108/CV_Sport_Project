@@ -5,7 +5,7 @@
 * @version 1.0
 */
 
-#include "performance.cpp"
+#include "performance.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <fstream>
