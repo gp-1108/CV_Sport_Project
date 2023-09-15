@@ -1,11 +1,11 @@
 /**
-* @file performance.cpp
+* @file performance.h
 * @author Federico Gelain ID number: 2076737
 * @date ---
 * @version 1.0
 */
 
-#include "performance.h"
+#include "performance.cpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <fstream>
@@ -13,6 +13,177 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+void segmentationMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath) {
+    // Checking if the folders exist
+    if (!cv::utils::fs::exists(folderPredictionPath)) {
+        std::cout << "The folder" << folderPredictionPath.c_str() << "does not exist" << std::endl;
+        return ;
+    }
+  
+    if (!cv::utils::fs::exists(folderGroundTruthPath)) {
+        std::cout << "The folder" << folderGroundTruthPath.c_str() << "does not exist" << std::endl;
+        return ;
+    }
+
+    std::vector<cv::String> predictionFiles; // The names of the files in the folder
+    cv::glob(folderPredictionPath, predictionFiles); // Getting the names of the files in the folder
+
+    std::vector<cv::String> truthFiles; // The names of the files in the folder
+    cv::glob(folderGroundTruthPath, truthFiles); // Getting the names of the files in the folder
+
+    std::vector<cv::String> predictionFilesReduced; // The names of the files in the folder
+    
+    for(int i = 0; i < predictionFiles.size(); i++) {
+      if(predictionFiles[i].find("BN_mask.png") != std::string::npos) {
+        predictionFilesReduced.push_back(predictionFiles[i]);
+      }
+    }
+    
+    std::sort(predictionFilesReduced.begin(), predictionFilesReduced.end(), [](const std::string& a, const std::string& b) {
+        size_t i = a.rfind('/', a.length());
+        size_t j = b.rfind('/', b.length());
+   
+        if (i == std::string::npos || j == std::string::npos) {
+            return a.compare(b) < 0;
+        }
+        
+        std::string fileNameA = a.substr(i + 1, a.length() - i);
+        std::string fileNameB = b.substr(j + 1, b.length() - j);
+
+        size_t posA = fileNameA.find('_');
+        size_t posB = fileNameB.find('_');
+    
+        std::string subA = fileNameA.substr(2, posA - 2);
+        std::string subB = fileNameB.substr(2, posB - 2);
+        
+        int numA = std::stoi(subA);
+        int numB = std::stoi(subB);
+
+        return numA < numB;
+    });
+
+    std::vector<cv::String> trueFilesReduced; // The names of the files in the folder
+    
+    for(int i = 0; i < truthFiles.size(); i++) {
+      if(truthFiles[i].find("bin.png") != std::string::npos) {
+        trueFilesReduced.push_back(truthFiles[i]);
+      }
+    }
+    
+    std::sort(trueFilesReduced.begin(), trueFilesReduced.end(), [](const std::string& a, const std::string& b) {
+        size_t i = a.rfind('/', a.length());
+        size_t j = b.rfind('/', b.length());
+   
+        if (i == std::string::npos || j == std::string::npos) {
+            return a.compare(b) < 0;
+        }
+        
+        std::string fileNameA = a.substr(i + 1, a.length() - i);
+        std::string fileNameB = b.substr(j + 1, b.length() - j);
+
+        size_t posA = fileNameA.find('_');
+        size_t posB = fileNameB.find('_');
+    
+        std::string subA = fileNameA.substr(2, posA - 2);
+        std::string subB = fileNameB.substr(2, posB - 2);
+        
+        int numA = std::stoi(subA);
+        int numB = std::stoi(subB);
+
+        return numA < numB;
+    });
+
+  for (int i = 0; i < predictionFilesReduced.size(); i++) {
+    std::cout << predictionFilesReduced[i] << ", " << trueFilesReduced[i] << std::endl;
+
+    cv::Mat originalPredictedSegmentationImage = cv::imread(predictionFilesReduced[i], cv::IMREAD_GRAYSCALE);
+    cv::Mat invertedPredictedSegmentationImage = originalPredictedSegmentationImage.clone();
+    cv::Mat trueSegmentationImage = cv::imread(trueFilesReduced[i], cv::IMREAD_GRAYSCALE);
+
+    //cv::Mat field(originalPredictedSegmentationImage.size(), CV_8UC1, cv::Scalar(0));
+
+    for(int j = 0; j < originalPredictedSegmentationImage.rows; j++) {
+      for(int k = 0; k < originalPredictedSegmentationImage.cols; k++) {
+        if(originalPredictedSegmentationImage.at<uchar>(j,k) == 1)
+          invertedPredictedSegmentationImage.at<uchar>(j,k) = 2;
+        else {
+          if(originalPredictedSegmentationImage.at<uchar>(j,k) == 2)
+            invertedPredictedSegmentationImage.at<uchar>(j,k) = 1;
+        }
+      }
+    }
+
+    std::vector<double> IoUPerClass;
+
+    for(int c = 0; c < 4; c++) {
+      double IoUOriginal = intersectionOverUnionSegmentation(originalPredictedSegmentationImage, trueSegmentationImage, c);
+      double IoUInverted = intersectionOverUnionSegmentation(invertedPredictedSegmentationImage, trueSegmentationImage, c);
+
+      std::cout << "Class " << c << "\noriginal: " << IoUOriginal << ", inverted: " << IoUInverted << std::endl;
+      std::cout << "maximum: " << std::max(IoUOriginal, IoUInverted) << std::endl;
+      std::cout << std::endl;
+      IoUPerClass.push_back(std::max(IoUOriginal, IoUInverted));
+    }
+
+    double mIoU = std::accumulate(IoUPerClass.begin(), IoUPerClass.end(), 0.0) / IoUPerClass.size();
+    std::cout << "mIoU: " << mIoU << std::endl;
+    
+    /*
+    std::cout << "File1: " << file_names1[i] << ", File2: " << file_names2[i] << std::endl;
+    for (int i = 0; i < bb1.size(); i++)
+    {
+      std::cout << bb1[i].first << "-" << bb1[i].second << ", " << bb2[i].first << "-" << bb2[i].second << std::endl;
+    }*/
+
+    /*
+    double mAPNonInvertedLabels = mAPComputation(originalPredictedBoundingBoxes, trueBoundingBoxes);
+    double mAPInvertedLabels = mAPComputation(invertedPredictedBoundingBoxes, trueBoundingBoxes);
+
+    std::cout << "Non inverted: " << mAPNonInvertedLabels << ", inverted: " << mAPInvertedLabels << std::endl;
+
+    std::cout << "Value taken:" << std::max(mAPNonInvertedLabels, mAPInvertedLabels) << std::endl;
+
+    std::cout << std::endl;*/
+  }
+}
+
+double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat groundTruth, int label) {
+    cv::Mat predictedMask(prediction.size(), CV_8UC1, cv::Scalar(0));
+    cv::Mat trueMask(prediction.size(), CV_8UC1, cv::Scalar(0));;
+
+    for(int i = 0; i < prediction.rows; i++) {
+      for(int j = 0; j < prediction.cols; j++) {
+        if(prediction.at<uchar>(i,j) == label)
+          predictedMask.at<uchar>(i,j) = 255;
+      }
+    }
+
+    for(int i = 0; i < groundTruth.rows; i++) {
+      for(int j = 0; j < groundTruth.cols; j++) {
+        if(groundTruth.at<uchar>(i,j) == label)
+          trueMask.at<uchar>(i,j) = 255;
+      }
+    }
+
+    int intersectionPixels = 0;
+    int unionPixels = 0;
+
+    for(int i = 0; i < predictedMask.rows; i++) {
+      for(int j = 0; j < predictedMask.cols; j++) {
+        if(predictedMask.at<uchar>(i,j) == 255 && trueMask.at<uchar>(i,j) == 255)
+          intersectionPixels++;
+
+        if(predictedMask.at<uchar>(i,j) == 255 || trueMask.at<uchar>(i,j) == 255)
+          unionPixels++;
+      }
+    }
+
+    if(unionPixels == 0)
+      return 0.0;
+
+    return (double)intersectionPixels/unionPixels;
+}
 
 void playerLocalizationMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath) {
     // Checking if the folders exist
@@ -32,17 +203,72 @@ void playerLocalizationMetrics(std::string folderPredictionPath, std::string fol
     std::vector<cv::String> truthFiles; // The names of the files in the folder
     cv::glob(folderGroundTruthPath, truthFiles); // Getting the names of the files in the folder
 
-  //std::printf("Detected %ld files in the folder %s\n", file_names1.size(), folder_path1.c_str());
-
-  for (int i = 0; i < predictionFiles.size(); i++) {
-    // Checking that the files are of the correct extension
-    if (predictionFiles[i].find(".txt") == std::string::npos && truthFiles[i].find(".txt") == std::string::npos) {
-      continue;
+    std::vector<cv::String> predictionFilesReduced; // The names of the files in the folder
+    
+    for(int i = 0; i < predictionFiles.size(); i++) {
+      if(predictionFiles[i].find("bb.txt") != std::string::npos) {
+        predictionFilesReduced.push_back(predictionFiles[i]);
+      }
     }
+    
+    std::sort(predictionFilesReduced.begin(), predictionFilesReduced.end(), [](const std::string& a, const std::string& b) {
+        size_t i = a.rfind('/', a.length());
+        size_t j = b.rfind('/', b.length());
+   
+        if (i == std::string::npos || j == std::string::npos) {
+            return a.compare(b) < 0;
+        }
+        
+        std::string fileNameA = a.substr(i + 1, a.length() - i);
+        std::string fileNameB = b.substr(j + 1, b.length() - j);
 
-    std::vector<std::pair<int, cv::Rect>> originalPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionFiles[i], false);
-    std::vector<std::pair<int, cv::Rect>> invertedPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionFiles[i], true);
-    std::vector<std::pair<int, cv::Rect>> trueBoundingBoxes = getBoundingBoxesFromFile(truthFiles[i], false);
+        size_t posA = fileNameA.find('_');
+        size_t posB = fileNameB.find('_');
+    
+        std::string subA = fileNameA.substr(2, posA - 2);
+        std::string subB = fileNameB.substr(2, posB - 2);
+        
+        int numA = std::stoi(subA);
+        int numB = std::stoi(subB);
+
+        return numA < numB;
+    });
+
+    std::vector<cv::String> trueFilesReduced; // The names of the files in the folder
+    
+    for(int i = 0; i < truthFiles.size(); i++) {
+      if(truthFiles[i].find("bb.txt") != std::string::npos) {
+        trueFilesReduced.push_back(truthFiles[i]);
+      }
+    }
+    
+    std::sort(trueFilesReduced.begin(), trueFilesReduced.end(), [](const std::string& a, const std::string& b) {
+        size_t i = a.rfind('/', a.length());
+        size_t j = b.rfind('/', b.length());
+   
+        if (i == std::string::npos || j == std::string::npos) {
+            return a.compare(b) < 0;
+        }
+        
+        std::string fileNameA = a.substr(i + 1, a.length() - i);
+        std::string fileNameB = b.substr(j + 1, b.length() - j);
+
+        size_t posA = fileNameA.find('_');
+        size_t posB = fileNameB.find('_');
+    
+        std::string subA = fileNameA.substr(2, posA - 2);
+        std::string subB = fileNameB.substr(2, posB - 2);
+        
+        int numA = std::stoi(subA);
+        int numB = std::stoi(subB);
+
+        return numA < numB;
+    });
+
+  for (int i = 0; i < predictionFilesReduced.size(); i++) {
+    std::vector<std::pair<int, cv::Rect>> originalPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionFilesReduced[i], false);
+    std::vector<std::pair<int, cv::Rect>> invertedPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionFilesReduced[i], true);
+    std::vector<std::pair<int, cv::Rect>> trueBoundingBoxes = getBoundingBoxesFromFile(trueFilesReduced[i], false);
     
     /*
     std::cout << "File1: " << file_names1[i] << ", File2: " << file_names2[i] << std::endl;
@@ -110,7 +336,7 @@ std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string fileP
   return boundingBoxesInfo;
 }
 
-double intersectionOverUnion(const cv::Rect prediction, const cv::Rect groundTruth) {
+double intersectionOverUnionBoundingBox(const cv::Rect prediction, const cv::Rect groundTruth) {
   //check for division by zero (if both areas are 0, the union will be 0)
   if(prediction.area() == 0 && groundTruth.area() == 0) {
     return 0.0;
@@ -232,24 +458,24 @@ double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::ve
   std::vector<int> cumulativeFalsePositives(2, 0);
   std::vector<int> cumulativeFalseNegatives(2, 0);
   
-  for(int i = 0; i < predictions.size(); i++) {
-    int currentLabel = predictions[i].first;
+  for(int i = 0; i < truth.size(); i++) {
+    int currentLabel = truth[i].first;
     double maxIOUPositive = 0;
     double maxIOUNegative = 0;
 
     bool positive = false;
     //look through all the ground truth bounding boxes and compute the maximum Iou with the ones that have the same label of the predicted one
-    for(int j = 0; j < truth.size(); j++) { 
-      if(currentLabel == truth[j].first) {
+    for(int j = 0; j < predictions.size(); j++) { 
+      if(currentLabel == predictions[j].first) {
         positive = true;
-        double currIou = intersectionOverUnion(predictions[i].second, truth[j].second);
+        double currIou = intersectionOverUnionBoundingBox(predictions[j].second, truth[i].second);
 
         if(maxIOUPositive < currIou) {
           maxIOUPositive = currIou;
         }
       }
       else {
-        double currIou = intersectionOverUnion(predictions[i].second, truth[j].second);
+        double currIou = intersectionOverUnionBoundingBox(predictions[j].second, truth[i].second);
 
         if(maxIOUNegative < currIou) {
           maxIOUNegative = currIou;

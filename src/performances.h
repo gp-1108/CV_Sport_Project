@@ -12,6 +12,8 @@
 #include <opencv2/highgui.hpp>
 #include <string>
 
+void segmentationMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath);
+
 /**
  * @brief function that computes the metric for the players localization (mAP, mean Average Precision) for the predicted bounding boxes
  * @param folderPredictionPath: path to the folder that contains the files in which are stored the bounding boxes of each player predicted for each image
@@ -33,7 +35,16 @@ std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string fileP
  * @param groundTruth: true bounding box
  * @return double value corresponding to the IoU of the two bounding boxes
 */
-double intersectionOverUnion(const cv::Rect prediction, const cv::Rect groundTruth);
+double intersectionOverUnionBoundingBox(const cv::Rect prediction, const cv::Rect groundTruth);
+
+/**
+ * @brief function that computes the IoU (Intersection over Union) for segmentation masks of a certain class
+ * @param prediction: predicted mask
+ * @param groundTruth: true mask
+ * @param label: value corresponding to the class label
+ * @return double value corresponding to the IoU of the segmentation masks of a certain class
+*/
+double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat groundTruth, int label);
 
 /**
  * @brief function that computes the AP (Average Precision) for a certain class
