@@ -1,5 +1,5 @@
 /**
-* @file performance.h
+* @file performances.h
 * @author Federico Gelain ID number: 2076737
 * @date ---
 * @version 1.0
@@ -12,14 +12,13 @@
 #include <opencv2/highgui.hpp>
 #include <string>
 
-void segmentationMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath);
-
 /**
- * @brief function that computes the metric for the players localization (mAP, mean Average Precision) for the predicted bounding boxes
- * @param folderPredictionPath: path to the folder that contains the files in which are stored the bounding boxes of each player predicted for each image
- * @param folderGroundTruthPath: path to the folder that contains the files in which are stored the bounding boxes of each player predicted for each image
+ * @brief function that computes the metrics required for the players localization (mAP, mean Average Precision) for the predicted bounding boxes
+ * and for the images segmentation (mIoU, mean Intersection over Union). It also writes a file which will contain all the metrics computed for each image and the overall results
+ * @param folderPredictionPath: path to the folder that contains the files in which are stored all the predictions obtained during the execution of the program
+ * @param folderGroundTruthPath: path to the folder that contains the files in which are stored all the ground truth files
 */
-void playerLocalizationMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath);
+void computeMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath);
 
 /**
  * @brief function that retreives the bounding boxes saved in a certain files and returns them, paired with the corresponding label, in a vector

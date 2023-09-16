@@ -62,11 +62,7 @@ int main(int argc, char **argv)
     std::string ground_truth_path = folder_path + "/Masks";
     std::string output_pred_path = output_folder_path + "/Masks";
 
-    // Computing mIoU
-    segmentationMetrics(output_pred_path, ground_truth_path);
-
-    // Computing mAP
-    playerLocalizationMetrics(output_pred_path, ground_truth_path);
+    computeMetrics(output_pred_path, ground_truth_path);
 
     std::printf("Performance evaluation done!\n\n");
 
