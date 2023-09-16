@@ -1,0 +1,60 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+%files
+  /home/pietro/Code/YOLOv8_human_parsing/packages.sh /root/install/packages.sh
+
+%post
+  # Author: Pietro Girotto
+  # ID: 2088245
+  
+  # Using "noninteractive" mode runs apt-get while ensuring that there are
+  # no user prompts that would cause the `singularity build` command to hang.
+  export DEBIAN_FRONTEND=noninteractive
+
+  # Updating the package lists
+  apt-get -qq -y update
+
+  # Installing apt-utils for packages configurations
+  apt-get -qq -y install apt-utils > /dev/null
+  # Downloads the latest package lists (important).
+
+  # Installing dependencies
+  bash /root/install/packages.sh
+
+  cd && mkdir workspace && cd workspace
+
+  mkdir ./opencv_build && cd ./opencv_build
+
+  git clone https://github.com/opencv/opencv.git
+
+  git clone https://github.com/opencv/opencv_contrib.git
+
+  # Setting opencv version
+  cd ~/workspace/opencv_build/opencv
+  git checkout 4.8.0
+
+  # Setting opencv_contrib version
+  cd ~/workspace/opencv_build/opencv_contrib
+  git checkout 4.8.0
+
+  cd ~/workspace/opencv_build/opencv && mkdir -p build && cd build
+
+  cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_C_EXAMPLES=ON -DINSTALL_PYTHON_EXAMPLES=ON -DOPENCV_ENABLE_NONFREE=ON -DOPENCV_GENERATE_PKGCONFIG=ON -DOPENCV_EXTRA_MODULES_PATH=~/workspace/opencv_build/opencv_contrib/modules -DBUILD_EXAMPLES=ON ..
+
+  # Building
+  make
+
+  make install
+
+  # Just checking
+  pkg-config --modversion opencv4
+
+  # Final touches
+  bash -c "echo ’/usr/local/lib’ | tee --append /etc/ld.so.conf.d/opencv.conf"
+
+  ldconfig
+
+  bash -c "echo ’PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig’ | tee --append ~/.bashrc"
+
+  bash -c "echo ’export PKG_CONFIG_PATH’ | tee --append ~/.bashrc"
