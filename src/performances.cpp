@@ -5,7 +5,7 @@
 * @version 1.0
 */
 
-#include "performance.h"
+#include "performances.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <fstream>
@@ -35,7 +35,7 @@ void segmentationMetrics(std::string folderPredictionPath, std::string folderGro
     std::vector<cv::String> predictionFilesReduced; // The names of the files in the folder
     
     for(int i = 0; i < predictionFiles.size(); i++) {
-      if(predictionFiles[i].find("BN_mask.png") != std::string::npos) {
+      if(predictionFiles[i].find("_bin.png") != std::string::npos) {
         predictionFilesReduced.push_back(predictionFiles[i]);
       }
     }

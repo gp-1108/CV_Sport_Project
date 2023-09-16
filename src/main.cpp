@@ -2,6 +2,7 @@
 #include <opencv2/core/utils/filesystem.hpp>
 #include "yolo.h"
 #include "sceneAnalyzer.h"
+#include "performances.h"
 
 /**
  * This main can be used on the entire dataset to generate the output files:
@@ -27,14 +28,16 @@ int main(int argc, char **argv)
       printf("The folder %s does not exist\n", folder_path.c_str());
       return -1;
     }
-    if (!cv::utils::fs::exists(output_folder_path)) {
-      printf("The folder %s does not exist\n", output_folder_path.c_str());
-      printf("Creating the folder %s\n", output_folder_path.c_str());
-      cv::utils::fs::createDirectories(output_folder_path);
+
+    std::string src_images_path = folder_path + "/Images";
+    // Checking if the folders exist
+    if (!cv::utils::fs::exists(src_images_path)) {
+      printf("The folder %s does not exist\n", src_images_path.c_str());
+      return -1;
     }
 
     std::vector<std::string> file_names; // The names of the files in the folder
-    cv::glob(folder_path, file_names); // Getting the names of the files in the folder
+    cv::glob(src_images_path, file_names); // Getting the names of the files in the folder
 
     std::printf("Detected %ld files in the folder %s\n", file_names.size(), folder_path.c_str());
 
@@ -45,19 +48,29 @@ int main(int argc, char **argv)
       if (file_names[i].find(".jpg") == std::string::npos && file_names[i].find(".png") == std::string::npos) {
         continue;
       }
-      // Reading the image
-      cv::Mat original_image = cv::imread(file_names[i]);
 
       sceneAnalyzer(yolo, output_folder_path, file_names[i]);
 
-      // Running the segmentation
-      //cv::Mat finalMask;
-      //yolo.runSegmentation(original_image, finalMask);
-      //finalMask = postProcessing(originalImage, finalMask); //TODO modifica direttamente la reference
-      //assignToTeams(output_folder_path, file_names[i], originalImage, finalMask);
     }
 
-    printf("Done!\n");
+    std::printf("Processing done!\n");
+
+    std::printf("#############################################\n\n\n");
+    std::printf("Now starting with performance evaluation...\n");
+
+    // Performance evaluation
+    std::string ground_truth_path = folder_path + "/Masks";
+    std::string output_pred_path = output_folder_path + "/Masks";
+
+    // Computing mIoU
+    segmentationMetrics(output_pred_path, ground_truth_path);
+
+    // Computing mAP
+    playerLocalizationMetrics(output_pred_path, ground_truth_path);
+
+    std::printf("Performance evaluation done!\n\n");
+
+    std::printf("Exiting the program...\n");
     return 0;
   }
   else

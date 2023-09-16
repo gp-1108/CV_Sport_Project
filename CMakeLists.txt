@@ -4,7 +4,15 @@ project(YOLO_INFERENCE)
 
 find_package(OpenCV 4 REQUIRED)
 
-add_executable(main src/main.cpp src/yolo.cpp src/postProcessingYolo.cpp 
-                    src/playerAssignement.cpp src/sceneAnalyzer.cpp
-                    src/fieldSegmentation.cpp)
+add_executable(main src/main.cpp
+                src/yolo.cpp
+                src/postProcessingYolo.cpp 
+                src/playerAssignement.cpp
+                src/sceneAnalyzer.cpp
+                src/fieldSegmentation.cpp
+                src/performances.cpp)
+
 target_link_libraries(main ${OpenCV_LIBS})
+
+add_executable(model_inference src/model_inference.cpp src/yolo.cpp)
+target_link_libraries(model_inference ${OpenCV_LIBS})
