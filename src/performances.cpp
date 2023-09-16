@@ -172,6 +172,8 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
     std::vector<std::pair<int, cv::Rect>> trueBoundingBoxes = getBoundingBoxesFromFile(truthBBFiles[i], false);
 
     double mAPNonInvertedLabels = mAPComputation(originalPredictedBoundingBoxes, trueBoundingBoxes);
+
+    //std::cout << "Inverted" << std::endl;
     double mAPInvertedLabels = mAPComputation(invertedPredictedBoundingBoxes, trueBoundingBoxes);
 
     double mAP = std::max(mAPNonInvertedLabels, mAPInvertedLabels);
@@ -365,8 +367,8 @@ double intersectionOverUnionBoundingBox(const cv::Rect prediction, const cv::Rec
   //cv::imshow("Rect1", maxAreaRect1);
   //cv::imshow("Rect2", maxAreaRect2);
 
-  cv::Mat unionMask = maxAreaRect1 + maxAreaRect2;
   cv::Mat intersectionMask = maxAreaRect1.mul(maxAreaRect2);
+  cv::Mat unionMask = maxAreaRect1 + maxAreaRect2;
 
   //cv::imshow("Union", unionMask);
   //cv::imshow("Intersection", intersectionMask);
@@ -451,6 +453,14 @@ double computeAP(std::vector<double> precision, std::vector<double> recall) {
 double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::vector<std::pair<int, cv::Rect>> truth) {
   //since we know the bounding boxes only cover the players, the metrics are computed only for the labels team A and B (which are respectively 1 and 2, so we can index them by simply subtracting 1)
   //a structure is created to store, for each class, the recall and precision value at each iteration of all bounding boxes predicted
+  std::vector<int> numTruthPerClass(2, 0);
+  
+  for(int i = 0; i < truth.size(); i++) {
+    if(truth[i].first == 1)
+      numTruthPerClass[0]++;
+    else
+      numTruthPerClass[1]++;
+  }
   std::vector<std::vector<double>> recall(2, std::vector<double>(0, 0));
   std::vector<std::vector<double>> precision(2, std::vector<double>(0, 0));
 
@@ -459,63 +469,51 @@ double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::ve
   std::vector<int> cumulativeFalsePositives(2, 0);
   std::vector<int> cumulativeFalseNegatives(2, 0);
   
+  std::vector<bool> alreadyTaken(predictions.size(), false);
+ 
   for(int i = 0; i < truth.size(); i++) {
     int currentLabel = truth[i].first;
     double maxIOUPositive = 0;
     double maxIOUNegative = 0;
+    int indexToRemove = -1;
 
-    bool positive = false;
     //look through all the ground truth bounding boxes and compute the maximum Iou with the ones that have the same label of the predicted one
     for(int j = 0; j < predictions.size(); j++) { 
-      if(currentLabel == predictions[j].first) {
-        positive = true;
+      if(!alreadyTaken[j] && currentLabel == predictions[j].first) {
         double currIou = intersectionOverUnionBoundingBox(predictions[j].second, truth[i].second);
 
         if(maxIOUPositive < currIou) {
           maxIOUPositive = currIou;
-        }
-      }
-      else {
-        double currIou = intersectionOverUnionBoundingBox(predictions[j].second, truth[i].second);
-
-        if(maxIOUNegative < currIou) {
-          maxIOUNegative = currIou;
+          indexToRemove = j;
         }
       }
     }
 
-    if(positive) { //at least one bounding box from the ground truth has the label predicted (so either TP or FP)
-      //if the maximum iou computed is over the threshold, it means that the predicted bounding box has been classified correctly (true positive)
-      if(maxIOUPositive > 0.5) {
-        cumulativeTruePositives[currentLabel - 1]++;
-      }
-      else { //otherwise it's a false positive
-        cumulativeFalsePositives[currentLabel - 1]++;
-      }
+    if(maxIOUPositive > 0.5) {
+      cumulativeTruePositives[currentLabel - 1]++;
+      alreadyTaken[indexToRemove] = true;
     }
-    else { //check if it is a false negative
-      if(maxIOUNegative > 0.5) {
-        cumulativeFalseNegatives[currentLabel - 1]++;
-      }
+    else { //otherwise it's a false positive
+      cumulativeFalsePositives[currentLabel - 1]++;
     }
-
-    //std::cout << "\nClass 1\nTP: " << cumulativeTruePositives[0] << ", FP: " << cumulativeFalsePositives[0] << std::endl;
-    //std::cout << "\nClass 2\nTP: " << cumulativeTruePositives[1] << ", FP: " << cumulativeFalsePositives[1] << "\n" << std::endl;
-
-    precision[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (cumulativeTruePositives[currentLabel - 1] + cumulativeFalsePositives[currentLabel - 1]));
-    recall[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (cumulativeTruePositives[currentLabel - 1] + cumulativeFalseNegatives[currentLabel - 1]));
+    
+    if(cumulativeTruePositives[currentLabel - 1] > 0) {
+      precision[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (cumulativeTruePositives[currentLabel - 1] + cumulativeFalsePositives[currentLabel - 1]));
+      recall[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (numTruthPerClass[currentLabel - 1]));
+    }
   }
- 
+
   /*
   std::cout << "Class 1" << std::endl;
-  for(int i = 0; i < precision.size(); i++) {
+  for(int i = 0; i < precision[0].size(); i++) {
     std::cout << "Precision: " << precision[0][i] << ", recall: " << recall[0][i] << std::endl;
   }
 
   std::cout << "\nClass 2" << std::endl;
-  for(int i = 0; i < precision.size(); i++) {
+  for(int i = 0; i < precision[1].size(); i++) {
     std::cout << "Precision: " << precision[1][i] << ", recall: " << recall[1][i] << std::endl;
-  }*/
+  }
+  */
 
   double mAP = 0.0;
   
