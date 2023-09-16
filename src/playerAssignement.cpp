@@ -347,15 +347,27 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
 
 void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership) {
 
+  // Check if the output folder exists
+  if(!cv::utils::fs::exists(output_folder_path)) {
+    printf("The folder %s does not exist\n", output_folder_path.c_str());
+    printf("Creating the folder %s\n", output_folder_path.c_str());
+    cv::utils::fs::createDirectories(output_folder_path);
+  }
+
+  // Check if the output folder contains the Masks folder
+  if(!cv::utils::fs::exists(output_folder_path + "/Masks")) {
+    cv::utils::fs::createDirectories(output_folder_path + "/Masks");
+  }
+
   std::string img_name = file_name.substr(file_name.find_last_of("/") + 1);
   img_name.erase(img_name.length() - 4);
 
   // Save the RGB mask
-  std::string RGB_mask_path = output_folder_path + "/Masks/" + img_name + "_RGB_mask.png";
+  std::string RGB_mask_path = output_folder_path + "/Masks/" + img_name + "_color.png";
   cv::imwrite(RGB_mask_path, RGB_mask);
 
   // Save the BN mask
-  std::string BN_mask_path = output_folder_path + "/Masks/" + img_name + "_BN_mask.png";
+  std::string BN_mask_path = output_folder_path + "/Masks/" + img_name + "_bin.png";
   cv::imwrite(BN_mask_path, BN_mask);
 
   // Save the bounding boxes of the players
