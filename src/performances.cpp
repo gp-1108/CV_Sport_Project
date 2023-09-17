@@ -401,10 +401,8 @@ double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat
     /*
      * A breakdown of how this works:
      * 1) Create for prediction and ground truth a mask where a pixel which is assigned the class label will have value 255, 0 otherwise;
-     * 2) Loop through the pixels of both masks together:
-     *    if both masks have the pixel set to 255, then it counts for the intersection;
-     *    if at least one mask has the pixel set to 255, then it counts for the union;
-     * 3) At the end, compute IoU as the ratio of number of pixels counting for intersection and the ones counting for union
+     * 2) In the same way as the bounding boxes approach, compute the intersection mask multypling the two masks and the union one summing them;
+     * 3) Count the number of non zero pixles to obtain the intersection and union count values and compute IoU as their ratio
     */
     cv::Mat predictedMask(prediction.size(), CV_8UC1, cv::Scalar(0));
     cv::Mat trueMask(prediction.size(), CV_8UC1, cv::Scalar(0));;
@@ -428,25 +426,19 @@ double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat
       }
     }
 
-    int intersectionPixels = 0;
-    int unionPixels = 0;
+    cv::Mat intersectionMask = predictedMask.mul(trueMask);
+    cv::Mat unionMask = predictedMask + trueMask;
 
-    //calculate the number of intersection and union pixels
-    for(int i = 0; i < predictedMask.rows; i++) {
-      for(int j = 0; j < predictedMask.cols; j++) {
-        if(predictedMask.at<uchar>(i,j) == 255 && trueMask.at<uchar>(i,j) == 255)
-          intersectionPixels++;
+    //cv::imshow("Union", unionMask);
+    //cv::imshow("Intersection", intersectionMask);
 
-        if(predictedMask.at<uchar>(i,j) == 255 || trueMask.at<uchar>(i,j) == 255)
-          unionPixels++;
-      }
-    }
+    //cv::waitKey(0);
 
-    //this happens only if both masks are empty (extremely unlikely, but something to check regardless)
-    if(unionPixels == 0)
-      return 0.0;
+    int numPixelsIntersection = cv::countNonZero(intersectionMask);
+    int numPixelsUnion = cv::countNonZero(unionMask);
 
-    return (double)intersectionPixels/unionPixels;
+    //std::cout << "Iou: " << (double)numPixelsIntersection/numPixelsUnion << std::endl;
+    return (double)numPixelsIntersection / numPixelsUnion;
 }
 
 std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string filePath, bool inverted) {
