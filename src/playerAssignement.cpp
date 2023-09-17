@@ -323,7 +323,6 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters,
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k]) && std::get<2>(clusters[i][j]) == std::get<2>(match[k])) {
-          //std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
           team_membership[k] = i;
         }
       }
@@ -337,7 +336,6 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k])) {
-          //std::cout << "Player " << k + 1 << " belongs to cluster " << i+1 << std::endl;
           team_membership[k] = i;
         }
       }
@@ -418,7 +416,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
         int b = pixel[0];
         int g = pixel[1];
         int r = pixel[2];
-        if(r < 10 || g < 10 || b < 10) //TODO controlla queste threshold
+        if(r < 10 || g < 10 || b < 10)
           continue;
         R.push_back(r);
         G.push_back(g);
@@ -448,7 +446,6 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
   for(int k = 0; k < match.size(); k++) {
     for(int l = k + 1; l < match.size(); l++) {
       distance += sqrt(pow(std::get<0>(match[k]) - std::get<0>(match[l]), 2) + pow(std::get<1>(match[k]) - std::get<1>(match[l]), 2) + pow(std::get<2>(match[k]) - std::get<2>(match[l]), 2));
-  //std::cout << "Distance: " << distance << std::endl;
     }
   }
   distance = distance / (match.size() * (match.size() - 1) / 2);
@@ -476,21 +473,13 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     float silGBk2 = silhouette(matchGB, clustersGBk2, 2);
     float silRGk2 = silhouette(matchRG, clustersGRk2, 2);
 
-    // Print the min silhouette value
-    std::cout << "Silhouette 3d k=2: " << sil3dk2 << std::endl;
-    std::cout << "Silhouette GB k=2: " << silGBk2 << std::endl;
-    std::cout << "Silhouette RG k=2: " << silRGk2 << std::endl;
-
     float max_silhouette = findMax(sil3dk2, silGBk2, silRGk2);
 
     if(max_silhouette == sil3dk2) {
-      std::cout << "3d k=2" << std::endl;
       parseClusters(clusters3dk2, match, team_membership);
     } else if(max_silhouette == silGBk2) {
-      std::cout << "GB k=2" << std::endl;
       parseClusters(clustersGBk2, matchGB, team_membership);
     } else if(max_silhouette == silRGk2) {
-      std::cout << "RG k=2" << std::endl;
       parseClusters(clustersGRk2, matchRG, team_membership);
     }
 
