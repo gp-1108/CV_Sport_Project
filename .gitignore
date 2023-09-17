@@ -1,7 +1,6 @@
 datasets/
 build
 src/ignore
-first_run_2_gpu/
 runs/
 .vscode
 *.sif
@@ -11,3 +10,4 @@ pulls_from_clusterDEI/
 opencv_env
 opencv_build
 Final_preds/
+*__pycache__/
