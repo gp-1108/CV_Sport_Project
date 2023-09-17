@@ -58,17 +58,17 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
    
         //if there isn't, then the file is located in the same directory the program is run
         if (i == std::string::npos || j == std::string::npos) {
-            size_t posA = fileNameA.find('_');
-            size_t posB = fileNameB.find('_');
+            size_t posA = a.find('_');
+            size_t posB = b.find('_');
         
             //the files were named incorrectly. In this case simply compare the strings lexicographically
             if (posA == std::string::npos || posB == std::string::npos) {
-              return fileNameA.compare(fileNameB) < 0;
+              return a.compare(b) < 0;
             }
 
             //assumption that all files start with im, which is why the string is extracted starting from the third character
-            std::string subA = fileNameA.substr(2, posA - 2);
-            std::string subB = fileNameB.substr(2, posB - 2);
+            std::string subA = a.substr(2, posA - 2);
+            std::string subB = b.substr(2, posB - 2);
             
             //subA and subB both contain a number (assuming the files were named correctly). stoi solves the problem of file with 09,
             //converting it in 9 so that it can be easily compared
@@ -111,17 +111,17 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
    
         //if there isn't, then the file is located in the same directory the program is run
         if (i == std::string::npos || j == std::string::npos) {
-            size_t posA = fileNameA.find('_');
-            size_t posB = fileNameB.find('_');
+            size_t posA = a.find('_');
+            size_t posB = b.find('_');
         
             //the files were named incorrectly. In this case simply compare the strings lexicographically
             if (posA == std::string::npos || posB == std::string::npos) {
-              return fileNameA.compare(fileNameB) < 0;
+              return a.compare(b) < 0;
             }
 
             //assumption that all files start with im, which is why the string is extracted starting from the third character
-            std::string subA = fileNameA.substr(2, posA - 2);
-            std::string subB = fileNameB.substr(2, posB - 2);
+            std::string subA = a.substr(2, posA - 2);
+            std::string subB = b.substr(2, posB - 2);
             
             //subA and subB both contain a number (assuming the files were named correctly). stoi solves the problem of file with 09,
             //converting it in 9 so that it can be easily compared
@@ -178,17 +178,17 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
    
         //if there isn't, then the file is located in the same directory the program is run
         if (i == std::string::npos || j == std::string::npos) {
-            size_t posA = fileNameA.find('_');
-            size_t posB = fileNameB.find('_');
+            size_t posA = a.find('_');
+            size_t posB = b.find('_');
         
             //the files were named incorrectly. In this case simply compare the strings lexicographically
             if (posA == std::string::npos || posB == std::string::npos) {
-              return fileNameA.compare(fileNameB) < 0;
+              return a.compare(b) < 0;
             }
 
             //assumption that all files start with im, which is why the string is extracted starting from the third character
-            std::string subA = fileNameA.substr(2, posA - 2);
-            std::string subB = fileNameB.substr(2, posB - 2);
+            std::string subA = a.substr(2, posA - 2);
+            std::string subB = b.substr(2, posB - 2);
             
             //subA and subB both contain a number (assuming the files were named correctly). stoi solves the problem of file with 09,
             //converting it in 9 so that it can be easily compared
@@ -231,17 +231,17 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
    
         //if there isn't, then the file is located in the same directory the program is run
         if (i == std::string::npos || j == std::string::npos) {
-            size_t posA = fileNameA.find('_');
-            size_t posB = fileNameB.find('_');
+            size_t posA = a.find('_');
+            size_t posB = b.find('_');
         
             //the files were named incorrectly. In this case simply compare the strings lexicographically
             if (posA == std::string::npos || posB == std::string::npos) {
-              return fileNameA.compare(fileNameB) < 0;
+              return a.compare(b) < 0;
             }
 
             //assumption that all files start with im, which is why the string is extracted starting from the third character
-            std::string subA = fileNameA.substr(2, posA - 2);
-            std::string subB = fileNameB.substr(2, posB - 2);
+            std::string subA = a.substr(2, posA - 2);
+            std::string subB = b.substr(2, posB - 2);
             
             //subA and subB both contain a number (assuming the files were named correctly). stoi solves the problem of file with 09,
             //converting it in 9 so that it can be easily compared
