@@ -64,6 +64,11 @@ int main(int argc, char **argv)
 
     computeMetrics(output_pred_path, ground_truth_path);
 
+    // Remove the confidences from the txt file
+    for (int i = 0; i < file_names.size(); i++) {
+      txtCleanUp(output_folder_path, file_names[i]);
+    }
+
     std::printf("Performance evaluation done!\n\n");
 
     std::printf("Exiting the program...\n");

@@ -70,7 +70,4 @@ void sceneAnalyzer(Yolov8Seg& yolo, const std::string& output_folder_path, const
   processed_mask = postProcessingYolo(processed_mask); //TODO modifica direttamente la reference
   assignToTeams(output_folder_path, file_name, original_image, processed_mask, field_mask);
 
-  // Remove the confidences from the txt file
-  txtCleanUp(output_folder_path, file_name);
-
 }
