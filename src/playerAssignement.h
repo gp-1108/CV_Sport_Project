@@ -66,16 +66,22 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
  * @param clusters: vector containing the clusters
  * @param match: vector containing all the points not organized in clusters
  * @param team_membership: vector containing the team membership of each player (teamA or teamB). This vector will be filled by the function.
+ * @param confidence: vector containing the confidence of each player
+ * @param centroids: vector containing the 3D values of the centroids of each cluster
+ * @param max_distance_from_centroids: vector containing the maximum distance of each cluster from its centroid
 */
-void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int>& team_membership);
+void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int>& team_membership, std::vector<float>& confidence, const std::vector<std::tuple<int, int, int>>& centroids, const std::vector<int>& max_distance_from_centroids);
 
 /**
  * @brief this function is a utility function used to parse the clusters, formed by 2D points (RG or GB), and assign correctly each player to a team
  * @param clusters: vector containing the clusters
  * @param match: vector containing all the points not organized in clusters
  * @param team_membership: vector containing the team membership of each player (teamA or teamB). This vector will be filled by the function.
+ * @param confidence: vector containing the confidence of each player
+ * @param centroids: vector containing the 2D values of the centroids of each cluster
+ * @param max_distance_from_centroids: vector containing the maximum distance of each cluster from its centroid
 */
-void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int>& team_membership);
+void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int>& team_membership, std::vector<float>& confidence, const std::vector<std::tuple<int, int>>& centroids, const std::vector<int>& max_distance_from_centroids);
 
 /**
  * @brief this function saves the output of the algorithm in the output folder. It generates a binary mask, a colored mask and a text file containing the bounding box details and the team membership of each player
@@ -83,10 +89,25 @@ void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std:
  * @param file_name: string containing the name of the image that has been processed
  * @param RGB_mask: reference of the Mat object containing the colored mask of the players
  * @param BN_mask: reference of the Mat object containing the binary mask of the players
- * @param players: vector containing the bounding boxes, the player colored mask and the uchar value of the player used in the binary mask
- * @param team_membership: vector containing the team membership of each player (teamA or teamB)
+ * @param players_features: vector containing [x, y, width, height, team membership, confidence of each player]. This vector will be used to produce the text file
 */
-void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership);
+void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<int, int, int, int, int, float>>& players_features);
+
+/**
+ * @brief this function computes the centroids of the clusters and the maximum distance of each cluster from its centroid. In this case the points are in 3D space (BGR)
+ * @param clusters: vector containing the clusters and the points inside them
+ * @param centroids: vector containing the 3D values of the centroids of each cluster. This vector will be filled by the function
+ * @param max_distance_from_centroids: vector containing the maximum distance of each cluster from its centroid. This vector will be filled by the function
+*/
+void computeCentroids(const std::vector<std::vector<std::tuple<int, int, int>>>& clusters, std::vector<std::tuple<int,int,int>>& centroids, std::vector<int>& max_distance_from_centroids);
+
+/**
+ * @brief this function computes the centroids of the clusters and the maximum distance of each cluster from its centroid. In this case the points are in 2D space (RG or GB)
+ * @param clusters: vector containing the clusters and the points inside them
+ * @param centroids: vector containing the 2D values of the centroids of each cluster. This vector will be filled by the function
+ * @param max_distance_from_centroids: vector containing the maximum distance of each cluster from its centroid. This vector will be filled by the function
+*/
+void computeCentroids(const std::vector<std::vector<std::tuple<int, int>>>& clusters, std::vector<std::tuple<int,int,int>>& centroids, std::vector<int>& max_distance_from_centroids);
 
 /**
  * @brief this function execute the entire player assignement algorithm. All the other functions are called inside this one by cascade

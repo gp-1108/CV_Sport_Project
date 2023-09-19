@@ -317,33 +317,37 @@ void localizePlayers(const cv::Mat& original_image, const cv::Mat& mask, std::ve
   }
 }
 
-void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int>& team_membership) {
+void parseClusters(std::vector<std::vector<std::tuple<int, int, int>>> clusters, std::vector<std::tuple<int, int, int>> match, std::vector<int>& team_membership, std::vector<float>& confidence, const std::vector<std::tuple<int, int, int>>& centroids, const std::vector<int>& max_distance_from_centroids) {
   for(int i = 0; i < clusters.size(); i++) {
     for(int j = 0; j < clusters[i].size(); j++) {
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k]) && std::get<2>(clusters[i][j]) == std::get<2>(match[k])) {
           team_membership[k] = i;
+          float distance = sqrt(pow(std::get<0>(match[k]) - std::get<0>(centroids[i]), 2) + pow(std::get<1>(match[k]) - std::get<1>(centroids[i]), 2) + pow(std::get<2>(match[k]) - std::get<2>(centroids[i]), 2));
+          confidence[k] = 1 - (distance / max_distance_from_centroids[i]);
         }
       }
     }
   }
 }
 
-void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int>& team_membership) {
+void parseClusters(std::vector<std::vector<std::tuple<int, int>>> clusters, std::vector<std::tuple<int, int>> match, std::vector<int>& team_membership, std::vector<float>& confidence, const std::vector<std::tuple<int, int>>& centroids, const std::vector<int>& max_distance_from_centroids) {
   for(int i = 0; i < clusters.size(); i++) {
     for(int j = 0; j < clusters[i].size(); j++) {
       // find the index of the point in the match vector
       for(int k = 0; k < match.size(); k++) {
         if(std::get<0>(clusters[i][j]) == std::get<0>(match[k]) && std::get<1>(clusters[i][j]) == std::get<1>(match[k])) {
           team_membership[k] = i;
+          float distance = sqrt(pow(std::get<0>(match[k]) - std::get<0>(centroids[i]), 2) + pow(std::get<1>(match[k]) - std::get<1>(centroids[i]), 2));
+          confidence[k] = 1 - (distance / max_distance_from_centroids[i]);
         }
       }
     }
   }
 }
 
-void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<cv::Rect, cv::Mat, int>>& players, const std::vector<int>& team_membership) {
+void saveOutput(const std::string& output_folder_path, const std::string& file_name, const cv::Mat& RGB_mask, const cv::Mat& BN_mask, const std::vector<std::tuple<int, int, int, int, int, float>>& players_features) {
 
   // Check if the output folder exists
   if(!cv::utils::fs::exists(output_folder_path)) {
@@ -371,10 +375,54 @@ void saveOutput(const std::string& output_folder_path, const std::string& file_n
   // Save the bounding boxes of the players
   std::string coordinates_path = output_folder_path + "/Masks/" + img_name + "_bb.txt";
   std::ofstream coordinates_file(coordinates_path);
-  for(int i = 0; i < players.size(); i++) {
-    coordinates_file << std::get<0>(players[i]).x << " " << std::get<0>(players[i]).y << " " << std::get<0>(players[i]).width << " " << std::get<0>(players[i]).height << " " << team_membership[i] + 1 << std::endl;
+  for(int i = 0; i < players_features.size(); i++) {
+    coordinates_file << std::get<0>(players_features[i]) << " " << std::get<1>(players_features[i]) << " " << std::get<2>(players_features[i]) << " " << std::get<3>(players_features[i]) << " " << std::get<4>(players_features[i]) + 1 << " " << roundf(std::get<5>(players_features[i]) * 100) / 100 << std::endl;
   }
   coordinates_file.close();
+
+}
+
+void computeCentroids(const std::vector<std::vector<std::tuple<int, int, int>>>& clusters, std::vector<std::tuple<int,int,int>>& centroids, std::vector<int>& max_distance_from_centroids) {
+
+  for(int i = 0; i < clusters.size(); i++) {
+    int R_average = 0, G_average = 0, B_average = 0;
+    int max_distance = 0;
+    for(int j = 0; j < clusters[i].size(); j++) {
+      int distance = sqrt(pow(std::get<0>(clusters[i][j]) - std::get<0>(centroids[i]), 2) + pow(std::get<1>(clusters[i][j]) - std::get<1>(centroids[i]), 2) + pow(std::get<2>(clusters[i][j]) - std::get<2>(centroids[i]), 2));
+      if(distance > max_distance) {
+        max_distance = distance;
+      }
+      R_average += std::get<0>(clusters[i][j]);
+      G_average += std::get<1>(clusters[i][j]);
+      B_average += std::get<2>(clusters[i][j]);
+    }
+    R_average = R_average / clusters[i].size();
+    G_average = G_average / clusters[i].size();
+    B_average = B_average / clusters[i].size();
+    centroids[i] = std::make_tuple(R_average, G_average, B_average);
+    max_distance_from_centroids[i] = max_distance;
+  }
+
+}
+
+void computeCentroids(const std::vector<std::vector<std::tuple<int, int>>>& clusters, std::vector<std::tuple<int,int>>& centroids, std::vector<int>& max_distance_from_centroids) {
+  
+  for(int i = 0; i < clusters.size(); i++) {
+    int average_1 = 0, average_2 = 0;
+    int max_distance = 0;
+    for(int j = 0; j < clusters[i].size(); j++) {
+      int distance = sqrt(pow(std::get<0>(clusters[i][j]) - std::get<0>(centroids[i]), 2) + pow(std::get<1>(clusters[i][j]) - std::get<1>(centroids[i]), 2));
+      if(distance > max_distance) {
+        max_distance = distance;
+      }
+      average_1 += std::get<0>(clusters[i][j]);
+      average_2 += std::get<1>(clusters[i][j]);
+    }
+    average_1 = average_1 / clusters[i].size();
+    average_2 = average_2 / clusters[i].size();
+    centroids[i] = std::make_tuple(average_1, average_2);
+    max_distance_from_centroids[i] = max_distance;
+  }
 
 }
 
@@ -384,6 +432,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
   std::vector<std::tuple<int, int, int>> match;
   cv::Mat RGB_mask = cv::Mat::zeros(mask.size(), CV_8UC3);
   cv::Mat BN_mask = cv::Mat::zeros(mask.size(), CV_8UC1);
+  std::vector<std::tuple<int, int, int, int, int, float>> players_features; // Vector containing the features of each player (x, y, width, height, colorID, confidence)
 
   // Copy the field_mask in the BN_mask
   for(int i = 0; i < field_mask.rows; i++) {
@@ -405,6 +454,7 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
   localizePlayers(original_image, mask, players);
   
   std::vector<int> team_membership(players.size(), -1);
+  std::vector<float> confidence(players.size(), -1);
 
   for(int i = 0; i < players.size(); i++) {
   
@@ -441,6 +491,11 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
 
   }
 
+  float max_silhouette = 0;
+  std::vector<std::tuple<int,int,int>> centroids3d(2);
+  std::vector<std::tuple<int,int>> centroids2d(2);
+  std::vector<int> max_distance_from_centroids(2);
+
   // Compute the mean distance between all the points
   float distance = 0;
   for(int k = 0; k < match.size(); k++) {
@@ -473,20 +528,26 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     float silGBk2 = silhouette(matchGB, clustersGBk2, 2);
     float silRGk2 = silhouette(matchRG, clustersGRk2, 2);
 
-    float max_silhouette = findMax(sil3dk2, silGBk2, silRGk2);
+    max_silhouette = findMax(sil3dk2, silGBk2, silRGk2);
 
     if(max_silhouette == sil3dk2) {
-      parseClusters(clusters3dk2, match, team_membership);
+      computeCentroids(clusters3dk2, centroids3d, max_distance_from_centroids);
+      parseClusters(clusters3dk2, match, team_membership, confidence, centroids3d, max_distance_from_centroids);
     } else if(max_silhouette == silGBk2) {
-      parseClusters(clustersGBk2, matchGB, team_membership);
+      computeCentroids(clustersGBk2, centroids2d, max_distance_from_centroids);
+      parseClusters(clustersGBk2, matchGB, team_membership, confidence, centroids2d, max_distance_from_centroids);
     } else if(max_silhouette == silRGk2) {
-      parseClusters(clustersGRk2, matchRG, team_membership);
+      computeCentroids(clustersGRk2, centroids2d, max_distance_from_centroids);
+      parseClusters(clustersGRk2, matchRG, team_membership, confidence, centroids2d, max_distance_from_centroids);
     }
 
   }
 
   // For each player we color his mask with the color of his team based on the team_membership vector (0 is blue, 1 is red, 2 is yellow)
   for(int i = 0; i < players.size(); i++) {
+
+    players_features.push_back(std::make_tuple(std::get<0>(players[i]).x, std::get<0>(players[i]).y, std::get<0>(players[i]).width, std::get<0>(players[i]).height, team_membership[i], max_silhouette*confidence[i]));
+
     if(team_membership[i] == 0) {
       // Color the mask of the player with blue
       for(int j = 0; j < mask.rows; j++) {
@@ -510,6 +571,6 @@ void assignToTeams(const std::string& output_folder_path, std::string file_name,
     }
   }
 
-  saveOutput(output_folder_path, file_name, RGB_mask, BN_mask, players, team_membership);
+  saveOutput(output_folder_path, file_name, RGB_mask, BN_mask, players_features);
 
 }
