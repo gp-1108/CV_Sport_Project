@@ -354,17 +354,10 @@ void fieldPostProcessing(cv::Mat& fieldImage) {
     
     cv::findContours(laplacianImage, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
-    for (int i = 0; i < contours.size(); i++) {
-        cv::drawContours(contourImage, contours, i, colors[i % 3], cv::FILLED);
-        cv::fillPoly(contourImage, contours[i], colors[(i + 1) % 3]);
-        
+    for (int i = 0; i < contours.size(); i++) {        
         //set as background all the contours whose area is below a certain area
         //(again, assumption that this is noise)
         if(cv::contourArea(contours[i]) < 1.8/100*(binaryFieldImage.rows * binaryFieldImage.cols)) {
-            cv::Mat mask(binaryFieldImage.size(), CV_8UC1, cv::Scalar(0));
-            
-            cv::drawContours(mask, contours, i, 255, cv::FILLED);
-
             cv::drawContours(openedImage, contours, i, 0, cv::FILLED); 
         }
     }
