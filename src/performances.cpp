@@ -306,9 +306,9 @@ void computeMetrics(std::string folderPredictionPath, std::string folderGroundTr
 
     //for the prediction, since there's no assurance that the team labels assigned to the players are the exact same of the ones
     //found in the ground truth files, both cases are handled and at the end the highest value is kept
-    std::vector<std::pair<int, cv::Rect>> originalPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionBBFiles[i], false);
-    std::vector<std::pair<int, cv::Rect>> invertedPredictedBoundingBoxes = getBoundingBoxesFromFile(predictionBBFiles[i], true);
-    std::vector<std::pair<int, cv::Rect>> trueBoundingBoxes = getBoundingBoxesFromFile(truthBBFiles[i], false);
+    std::vector<std::tuple<cv::Rect, int, double>> originalPredictedBoundingBoxes = getBoundingBoxesFromPredictionsFile(predictionBBFiles[i], false);
+    std::vector<std::tuple<cv::Rect, int, double>> invertedPredictedBoundingBoxes = getBoundingBoxesFromPredictionsFile(predictionBBFiles[i], true);
+    std::vector<std::tuple<cv::Rect, int>> trueBoundingBoxes = getBoundingBoxesFromGroundTruthFile(truthBBFiles[i]);
 
     //retreive the metric value for both cases
     double mAPNonInvertedLabels = mAPComputation(originalPredictedBoundingBoxes, trueBoundingBoxes);
@@ -441,8 +441,8 @@ double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat
     return (double)numPixelsIntersection / numPixelsUnion;
 }
 
-std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string filePath, bool inverted) {
-  std::vector<std::pair<int, cv::Rect>> boundingBoxesInfo;
+std::vector<std::tuple<cv::Rect, int, double>> getBoundingBoxesFromPredictionsFile(std::string filePath, bool inverted) {
+  std::vector<std::tuple<cv::Rect, int, double>> boundingBoxesInfo;
   
   std::ifstream bbFile (filePath);
 
@@ -453,9 +453,61 @@ std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string fileP
       //just in case that the file is wrongly written and it contains empty lines
       if(currLine.size() > 0) {
         /*
-         * each line of the files should contain exactly 5 values, separated by " ":
+         * each line of the files should contain exactly 6 values, separated by " ":
          * the 4 parameters of the rectangle (x, y, width, height);
          * the label that indicates the team prediction
+         * the confidence value of the bounding box
+        */
+        std::vector<std::string> bBoxData;
+
+        std::stringstream sstr(currLine);
+
+        std::string token;
+
+        while(sstr >> token) {
+          bBoxData.push_back(token);
+        }
+
+        //check that you retreived the correct number of parameters
+        if(bBoxData.size() == 6) {
+          //add the bounding box information in the structure
+          if(inverted) {
+            if(std::stoi(bBoxData[4]) == 1)
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
+                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 2, std::stod(bBoxData[5])));
+            else
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
+                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 1, std::stod(bBoxData[5])));
+          }
+          else 
+            boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
+                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), std::stoi(bBoxData[4]), std::stod(bBoxData[5])));
+        }
+      }
+    }
+
+    bbFile.close();
+  }
+
+  return boundingBoxesInfo;
+}
+
+std::vector<std::tuple<cv::Rect, int>> getBoundingBoxesFromGroundTruthFile(std::string filePath) {
+  std::vector<std::tuple<cv::Rect, int>> boundingBoxesInfo;
+  
+  std::ifstream bbFile (filePath);
+
+  if(bbFile.is_open()) {
+    std::string currLine;
+
+    while(std::getline(bbFile, currLine)) {
+      //just in case that the file is wrongly written and it contains empty lines
+      if(currLine.size() > 0) {
+        /*
+         * each line of the files should contain exactly 6 values, separated by " ":
+         * the 4 parameters of the rectangle (x, y, width, height);
+         * the label that indicates the team prediction
+         * the confidence value of the bounding box
         */
         std::vector<int> bBoxData;
 
@@ -470,14 +522,7 @@ std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string fileP
         //check that you retreived the correct number of parameters
         if(bBoxData.size() == 5) {
           //add the bounding box information in the structure
-          if(inverted) {
-            if(bBoxData[4] == 1)
-                boundingBoxesInfo.push_back(std::make_pair(2, cv::Rect(bBoxData[0], bBoxData[1], bBoxData[2], bBoxData[3])));
-            else
-                boundingBoxesInfo.push_back(std::make_pair(1, cv::Rect(bBoxData[0], bBoxData[1], bBoxData[2], bBoxData[3])));
-          }
-          else 
-            boundingBoxesInfo.push_back(std::make_pair(bBoxData[4], cv::Rect(bBoxData[0], bBoxData[1], bBoxData[2], bBoxData[3])));
+          boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(bBoxData[0], bBoxData[1], bBoxData[2], bBoxData[3]), bBoxData[4]));
         }
       }
     }
@@ -588,14 +633,14 @@ double computeAP(std::vector<double> precision, std::vector<double> recall) {
     return std::accumulate(interpPrecision.begin(), interpPrecision.end(), 0.0) / interpolationIntervals;
 }
 
-double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::vector<std::pair<int, cv::Rect>> truth) {
+double mAPComputation(std::vector<std::tuple<cv::Rect, int, double>> predictions, std::vector<std::tuple<cv::Rect, int>> truth) {
   //since we know the bounding boxes only cover the players, the metrics are computed only for the labels team A and B (which are respectively 1 and 2, so we can index them by simply subtracting 1)
   //a structure is created to store, for each class, the recall and precision value at each iteration of all bounding boxes predicted
   std::vector<int> numTruthPerClass(2, 0);
   
   //compute the number of ground truth boxes per class (needed for the recall computation)
   for(int i = 0; i < truth.size(); i++) {
-    if(truth[i].first == 1)
+    if(std::get<1>(truth[i]) == 1)
       numTruthPerClass[0]++;
     else
       numTruthPerClass[1]++;
@@ -610,25 +655,48 @@ double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::ve
   std::vector<int> cumulativeFalseNegatives(2, 0);
   
   std::vector<bool> alreadyTaken(predictions.size(), false);
+
+  /*
+  std::cout << "Before sorting:" << std::endl;
+  for (size_t i = 0; i < predictions.size(); i++)
+  {
+    std::cout << std::get<0>(predictions[i]) << ", " << std::get<1>(predictions[i]) << ", " << std::get<2>(predictions[i]) << std::endl;
+  }
+  
+  std::cout << std::endl;*/
+
+  //First thing, sort the prediction bounding boxes based on the confidence value
+  std::sort(predictions.begin(), predictions.end(), [](const std::tuple<cv::Rect, int, double>& a, const std::tuple<cv::Rect, int, double>& b) {
+    return std::get<2>(a) > std::get<2>(b);
+  });
+
+  /*
+  std::cout << "After sorting:" << std::endl;
+  for (size_t i = 0; i < predictions.size(); i++)
+  {
+    std::cout << std::get<0>(predictions[i]) << ", " << std::get<1>(predictions[i]) << ", " << std::get<2>(predictions[i]) << std::endl;
+  }
+  
+  std::cout << std::endl;*/
  
   /*
-   * having no information about the condifence each predicted bounding box has, the approach taken here is the following:
-   * 1) loop through each ground truth bounding box;
+   * To compute precision and recall the following steps are computed
+   * 1) loop through each predicted bounding box;
    * 2) compute the IoU with each predicted bounding box that has the same label and isn't already assigned to another ground truth bounding box;
    * 3) if the IoU computed is above the threshold, than we have found a TP predicted bounding box. So check it so that no other ground truth bounding box can take it;
    * 4) otherwise, increase the number of FP (no predicted bounding box with the same label is close enough)
    * The computation of FN is not considered, since the recall is computed using the number of ground truth bounding boxes for each class instead
   */
-  for(int i = 0; i < truth.size(); i++) {
-    int currentLabel = truth[i].first;
+  for(int i = 0; i < predictions.size(); i++) {
+    int currentLabel = std::get<1>(predictions[i]);
     double maxIOUPositive = 0;
     double maxIOUNegative = 0;
     int indexToRemove = -1;
 
     //look through all the ground truth bounding boxes and compute the maximum Iou with the ones that have the same label of the predicted one
-    for(int j = 0; j < predictions.size(); j++) { 
-      if(!alreadyTaken[j] && currentLabel == predictions[j].first) {
-        double currIou = intersectionOverUnionBoundingBox(predictions[j].second, truth[i].second);
+    for(int j = 0; j < truth.size(); j++) { 
+      if(!alreadyTaken[j] && currentLabel == std::get<1>(truth[j])) {
+        double currIou = intersectionOverUnionBoundingBox(std::get<0>(predictions[i]), std::get<0>(truth[j]));
 
         if(maxIOUPositive < currIou) {
           maxIOUPositive = currIou;

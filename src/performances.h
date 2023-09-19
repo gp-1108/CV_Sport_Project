@@ -21,12 +21,19 @@
 void computeMetrics(std::string folderPredictionPath, std::string folderGroundTruthPath);
 
 /**
- * @brief function that retreives the bounding boxes saved in a certain files and returns them, paired with the corresponding label, in a vector
+ * @brief function that retreives the predicted bounding boxes saved in a certain files and returns them, paired with the corresponding label and confidence value, in a vector
  * @param filePath: path of the file in which the information of the bounding boxes is stored
  * @param inverted: flag that tells if the predicted bounding boxes will be considered with the inverted label or not
- * @return vector of pairs (label, rectangle) containing the information of each bounding box
+ * @return vector of tuples (rectangle, label, confidence) containing the information of each predicted bounding box
 */
-std::vector<std::pair<int, cv::Rect>> getBoundingBoxesFromFile(std::string filePath, bool inverted);
+std::vector<std::tuple<cv::Rect, int, double>> getBoundingBoxesFromPredictionsFile(std::string filePath, bool inverted);
+
+/**
+ * @brief function that retreives the ground truth bounding boxes saved in a certain files and returns them, paired with the corresponding label, in a vector
+ * @param filePath: path of the file in which the information of the bounding boxes is stored
+ * @return vector of tuples (rectangle, label) containing the information of each bounding box
+*/
+std::vector<std::tuple<cv::Rect, int>> getBoundingBoxesFromGroundTruthFile(std::string filePath);
 
 /**
  * @brief function that computes the IoU (Intersection over Union) for two bounding boxes
@@ -53,12 +60,14 @@ double intersectionOverUnionSegmentation(const cv::Mat prediction, const cv::Mat
 */
 double computeAP(std::vector<double> precision, std::vector<double> recall);
 
+
+
 /**
  * @brief function that computes the mAP (mean Average Precision) of all classes
  * @param predictions: vector of pairs (label, rectangle) of all the predicted bounding boxes
  * @param truth: vector of pairs (label, rectangle) of all the ground truth bounding boxes
  * @return double value corresponding to the mAP of all classes
 */
-double mAPComputation(std::vector<std::pair<int, cv::Rect>> predictions, std::vector<std::pair<int, cv::Rect>> truth);
+double mAPComputation(std::vector<std::tuple<cv::Rect, int, double>> predictions, std::vector<std::tuple<cv::Rect, int>> truth);
 
 #endif
