@@ -36,8 +36,8 @@ cv::Mat fieldDetectionAndSegmentation(const cv::Mat fieldImage) {
 
     cv::Mat fieldMask = computeFieldMask(fieldImage, candidateColors, distanceThreshold, areaThreshold);
 
-    //WORK IN PROGRESS: for now it doesn't modify the image, but simply does some things that can be seen from the imshows
-    //fieldPostProcessing(fieldMask);
+    //apply some post processing the the segmented image
+    fieldPostProcessing(fieldMask);
 
     return fieldMask;
 }
@@ -324,63 +324,56 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
     return binaryFieldMask;
 }
 
-void postProcessing(cv::Mat& fieldImage) {
-    //first create the binary mask of the image, so that it's possible to apply morphological operations and such directly
-    cv::Mat binaryFieldImage = (fieldImage != cv::Vec3b(0, 0, 0));
-    binaryFieldImage = binaryFieldImage * 255;
+void fieldPostProcessing(cv::Mat& fieldImage) {
+    //convert the mask in a 0/255 binary image for easier processing
+    cv::Mat binaryFieldImage = fieldImage / 3 * 255;
 
-    cv::cvtColor(binaryFieldImage, binaryFieldImage, cv::COLOR_BGR2GRAY);
-
-    cv::imshow("Before anything", binaryFieldImage);
-    cv::waitKey(0);
-
-    //apply opening, to remove all small details which aren't needed
+    //apply opening, to remove all small details which basically represent noise
     double alpha = 1.0;
     int diameter = static_cast<int>((alpha / 100) * std::sqrt(std::pow(binaryFieldImage.rows, 2) + std::pow(binaryFieldImage.cols, 2)));
     cv::Mat structElem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameter, diameter));
 
     cv::Mat openedImage;
     cv::morphologyEx(binaryFieldImage, openedImage, cv::MORPH_OPEN, structElem);
+    
+    //to find the most significant contours in the mask, some blurring is applied
+    //(bilateralFIlter is chosen since it preserves edges better than the other averaging methods)
 
-    cv::imshow("Image after opening", openedImage);
-    cv::waitKey(0);
+    cv::Mat blurredImg;
+    cv::bilateralFilter(openedImage, blurredImg, 9, 75, 50, cv::BORDER_DEFAULT);
+    //cv::imshow("After blur", blurredImg);
+    //cv::waitKey(0);
+
+    //laplacian filter is applied to enhance the edges
+    cv::Mat laplacianImage;
+    cv::Laplacian(blurredImg, laplacianImage, -1, 3);
+
 
     //Find the contours. Use the contourOutput Mat so the original image doesn't get overwritten
     std::vector<std::vector<cv::Point>> contours;
     
-    cv::findContours(openedImage, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(laplacianImage, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
-    //Draw the contours
-    cv::Mat contourImage(openedImage.size(), CV_8UC3, cv::Scalar(0,0,0));
-    cv::Scalar colors[3];
-    colors[0] = cv::Scalar(255, 0, 0);
-    colors[1] = cv::Scalar(0, 255, 0);
-    colors[2] = cv::Scalar(0, 0, 255);
     for (int i = 0; i < contours.size(); i++) {
         cv::drawContours(contourImage, contours, i, colors[i % 3], cv::FILLED);
         cv::fillPoly(contourImage, contours[i], colors[(i + 1) % 3]);
         
-        if(cv::contourArea(contours[i]) < 0.5/100*(binaryFieldImage.rows * binaryFieldImage.cols)) {
-            uchar nearColor;
+        //set as background all the contours whose area is below a certain area
+        //(again, assumption that this is noise)
+        if(cv::contourArea(contours[i]) < 1.8/100*(binaryFieldImage.rows * binaryFieldImage.cols)) {
             cv::Mat mask(binaryFieldImage.size(), CV_8UC1, cv::Scalar(0));
             
             cv::drawContours(mask, contours, i, 255, cv::FILLED);
-        
-            //cv::imshow("Mask", mask);
-            //cv::waitKey(0);
-            
-            double mean = cv::mean(binaryFieldImage, mask)[0];
-            
-            if(mean < 127) //so the mean value was 0
-                cv::drawContours(openedImage, contours, i, 255, cv::FILLED);
-            else
-                cv::drawContours(openedImage, contours, i, 0, cv::FILLED);
+
+            cv::drawContours(openedImage, contours, i, 0, cv::FILLED); 
         }
     }
 
-    cv::imshow("Contours", contourImage);
-    cv::waitKey(0);
+    //apply closing to connect weakly connected regions 
+    double alpha2 = 1.2;
+    int diameter2 = static_cast<int>((alpha2 / 100) * std::sqrt(std::pow(binaryFieldImage.rows, 2) + std::pow(binaryFieldImage.cols, 2)));
+    cv::Mat structElem2 = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameter2, diameter2));
+    cv::morphologyEx(openedImage, openedImage, cv::MORPH_DILATE, structElem2);
 
-    cv::imshow("Result", openedImage);
-    cv::waitKey(0);
+    fieldImage = openedImage / 255 * 3;
 }
