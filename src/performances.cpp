@@ -721,6 +721,9 @@ double mAPComputation(std::vector<std::tuple<cv::Rect, int, double>> predictions
     }
     else { //otherwise it's a false positive
       cumulativeFalsePositives[currentLabel - 1]++;
+
+      if(indexToRemove != -1) //if this condition is true, it means that there was a corresponding grounding truth box (so FP case, not FN case)
+        alreadyTaken[indexToRemove] = true; //so "remove" the ground truth bounding box from further computations
     }
     
     //update precision and recall accordingly. cumulativeTruePositives = 0 means that both precision and recall will be equal to 0. There's no need to store these values
