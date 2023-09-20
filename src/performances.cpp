@@ -473,15 +473,25 @@ std::vector<std::tuple<cv::Rect, int, double>> getBoundingBoxesFromPredictionsFi
           //add the bounding box information in the structure
           if(inverted) {
             if(std::stoi(bBoxData[4]) == 1)
-                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
-                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 2, std::stod(bBoxData[5])));
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 2, std::stod(bBoxData[5])));
             else
-                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
-                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 1, std::stod(bBoxData[5])));
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 1, std::stod(bBoxData[5])));
           }
           else 
-            boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]),
-                 std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), std::stoi(bBoxData[4]), std::stod(bBoxData[5])));
+            boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), std::stoi(bBoxData[4]), std::stod(bBoxData[5])));
+        }
+        else {
+          //if there are only 5, it means that the confidence value wasn't provided. In this case, give it the value 0.0
+          if(bBoxData.size() == 5) {
+            if(inverted) {
+            	if(std::stoi(bBoxData[4]) == 1)
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 2, 0.0));
+            	else
+                boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), 1, 0.0));
+          	}
+          	else 
+            	boundingBoxesInfo.push_back(std::make_tuple(cv::Rect(std::stoi(bBoxData[0]), std::stoi(bBoxData[1]), std::stoi(bBoxData[2]), std::stoi(bBoxData[3])), std::stoi(bBoxData[4]), 0.0));
+          }
         }
       }
     }
@@ -717,6 +727,22 @@ double mAPComputation(std::vector<std::tuple<cv::Rect, int, double>> predictions
     if(cumulativeTruePositives[currentLabel - 1] > 0) {
       precision[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (cumulativeTruePositives[currentLabel - 1] + cumulativeFalsePositives[currentLabel - 1]));
       recall[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (numTruthPerClass[currentLabel - 1]));
+    }
+  }
+
+  //if there weren't enough predicted bounding boxes, add (#ground truth - #predicted) false positives to the count (they technically
+  //are false negatives, but for this computation they are considered as false positives)
+  if(truth.size() > predictions.size()) {
+    for(int i = 0; i < truth.size(); i++) {
+      if(!alreadyTaken[i]) {
+        int currentLabel = std::get<1>(truth[i]);      
+        cumulativeFalsePositives[currentLabel - 1]++;
+              
+        if(cumulativeTruePositives[currentLabel - 1] > 0) {
+      	    precision[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (cumulativeTruePositives[currentLabel - 1] + cumulativeFalsePositives[currentLabel - 1]));
+      		  recall[currentLabel - 1].push_back((double)cumulativeTruePositives[currentLabel - 1] / (numTruthPerClass[currentLabel - 1]));
+    	  }              
+      }
     }
   }
 
