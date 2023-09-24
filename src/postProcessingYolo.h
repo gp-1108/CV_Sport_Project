@@ -13,8 +13,7 @@
 /**
  * @brief this function processes the output obtained from the neural network to improve the player segmentation
  * @param playerMask: reference of the Mat object containing the mask of the players (black pixels are background, non-black pixels are players) 
- * @return Mat object which represents the processed mask of the players
 */
-cv::Mat postProcessingYolo(cv::Mat& playerMask);
+void postProcessingYolo(cv::Mat& playerMask);
 
 #endif

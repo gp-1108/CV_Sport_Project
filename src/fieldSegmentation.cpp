@@ -21,23 +21,18 @@ cv::Mat fieldDetectionAndSegmentation(const cv::Mat fieldImage) {
         }   
     }
 
-
     //2 works the best, in terms of accuracy and performance
     int peaksPerChannel = 2;
     std::vector<std::pair<cv::Vec3b, int>> candidateColors = computeCandidateColors(fieldImage, mask, peaksPerChannel);
 
     sortCandidateColors(fieldImage, mask, candidateColors);
-    
-    //Best parameters so far:
-    //distanceThreshold = 60
-    //areaThreshold = 0.15 * ...
-    int distanceThreshold = 65; //threshold for the intensity Euclidean distance
+
+    int distanceThreshold = 55; //threshold for the intensity Euclidean distance
     double areaThreshold = 0.15 * fieldImage.rows * fieldImage.cols; //arbitrary area requirement for a candidate color to be the field color
 
     cv::Mat fieldMask = computeFieldMask(fieldImage, candidateColors, distanceThreshold, areaThreshold);
 
-    //apply some post processing the the segmented image
-    fieldPostProcessing(fieldMask);
+   fieldPostProcessing(fieldMask);
 
     return fieldMask;
 }
@@ -65,7 +60,7 @@ std::vector<std::pair<cv::Vec3b, int>> computeCandidateColors(cv::Mat fieldImage
     /*
         int hist_w = 512, hist_h = 512;
         int bin_w = cvRound((double)hist_w / histSize);
-        cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0, 0, 0));
+        cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(255, 255, 255));
 
         cv::normalize(b_hist, b_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
         cv::normalize(g_hist, g_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
@@ -87,8 +82,9 @@ std::vector<std::pair<cv::Vec3b, int>> computeCandidateColors(cv::Mat fieldImage
         }
 
         cv::imshow("Histograms", histImage);
-        cv::waitKey(0);
-    */
+        cv::imwrite("a.png", histImage);
+        cv::waitKey(0);*/
+    
 
     /*
      * now the goal is to compute the peaks in each one of the histograms. To do so, the following steps are done:
@@ -163,6 +159,7 @@ std::vector<std::pair<cv::Vec3b, int>> computeCandidateColors(cv::Mat fieldImage
     //to each color is associated an int value, which represents the number of pixels in the image for which that color is the closest (in terms of distance)
     std::vector<std::pair<cv::Vec3b, int>> candidateColors;
 
+    int a = 0;
     for(int i = 0; i < l; i++) {
         for(int j = 0; j < l; j++) {
             for(int k = 0; k < l; k++) {
@@ -230,13 +227,6 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
     int index = 0; //index of the current candidate color
     int maxIndex = 0; //index of the color to assign if no candidate color satisfies the minimum area requirement
     int maxArea = 0; //area associated with the color of maxIndex
-
-    /*
-     cv::Point2d dominantPointCoordinates;
-     int numDom = 0;
-     int coordx = 0;
-     int coordy = 0;
-    */
     
     while(!colorFound && index < candidateColors.size()) {
         dominantColor = cv::Vec3b(candidateColors[index].first[0], candidateColors[index].first[1], candidateColors[index].first[2]);
@@ -256,10 +246,6 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
                 if(dist < distanceThreshold){
                     coloredFieldMask.at<cv::Vec3b>(i,j) = dominantColor;
                     binaryFieldMask.at<uchar>(i,j) = 3;
-                    
-                    //coordx += i;
-                    //coordy += j;
-                    //numDom++;
                 }
             }
         }
@@ -279,10 +265,6 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
                 maxArea = nonZeroPixels;
                 maxIndex = index;
             }
-
-            //numDom = 0;
-            //coordx = 0;
-            //coordy = 0;
         }
         else {
             colorFound = true; //the color has been found and so the while loop can stop
@@ -301,7 +283,7 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
                 double dist = 0;
 
                 for (int ch = 0; ch < coloredFieldMask.channels(); ch++) {
-                    dist += std::pow((candidateColors[maxIndex].first[ch] - coloredFieldMask.at<cv::Vec3b>(i,j)[ch]), 2);
+                    dist += std::pow((candidateColors[maxIndex].first[ch] - fieldImage.at<cv::Vec3b>(i,j)[ch]), 2);
                 }
 
                 dist = std::sqrt(dist);
@@ -309,17 +291,10 @@ cv::Mat computeFieldMask(const cv::Mat fieldImage, std::vector<std::pair<cv::Vec
                 if(dist < distanceThreshold){
                     coloredFieldMask.at<cv::Vec3b>(i,j) = dominantColor;
                     binaryFieldMask.at<uchar>(i,j) = 3;
-                    
-                    //coordx += i;
-                    //coordy += j;
-                    //numDom++;
                 }
             }
         }
     }
-
-    //cv::imshow("Colored field mask", coloredFieldMask);
-    //cv::waitKey(0);
 
     return binaryFieldMask;
 }
@@ -329,7 +304,7 @@ void fieldPostProcessing(cv::Mat& fieldImage) {
     cv::Mat binaryFieldImage = fieldImage / 3 * 255;
 
     //apply opening, to remove all small details which basically represent noise
-    double alphaOpen = 0.9;
+    double alphaOpen = 0.6;
     int diameterOpen = static_cast<int>((alphaOpen / 100) * std::sqrt(std::pow(binaryFieldImage.rows, 2) + std::pow(binaryFieldImage.cols, 2)));
     cv::Mat structElemOpen = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameterOpen, diameterOpen));
 
@@ -337,8 +312,7 @@ void fieldPostProcessing(cv::Mat& fieldImage) {
     cv::morphologyEx(binaryFieldImage, openedImage, cv::MORPH_OPEN, structElemOpen);
 
     //to find the most significant contours in the mask, some blurring is applied
-    //bilateralFIlter is chosen since it preserves edges better than the other averaging methods
-
+    //(bilateralFIlter is chosen since it preserves edges better than the other averaging methods)
     cv::Mat blurredImg;
     cv::bilateralFilter(openedImage, blurredImg, 9, 75, 50, cv::BORDER_DEFAULT);
     //cv::imshow("After blur", blurredImg);
@@ -353,16 +327,22 @@ void fieldPostProcessing(cv::Mat& fieldImage) {
     
     cv::findContours(laplacianImage, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
+    cv::Mat contImg(openedImage.size(), CV_8UC1, cv::Scalar(0));
     for (int i = 0; i < contours.size(); i++) {        
         //set as background all the contours whose area is below a certain area
         //(again, assumption that this is noise)
-        if(cv::contourArea(contours[i]) < 1.8/100*(binaryFieldImage.rows * binaryFieldImage.cols)) {
-            cv::drawContours(openedImage, contours, i, 0, cv::FILLED);  
+        std::vector<cv::Point> approx;
+	    cv::approxPolyDP(contours[i], approx, 5, true);
+
+        if(cv::contourArea(approx) < 1.4/100*(binaryFieldImage.rows * binaryFieldImage.cols)) {
+            cv::drawContours(openedImage, contours, i, 0, cv::FILLED); 
+            
         }
+        cv::drawContours(contImg, contours, i, 255); 
     }
 
     //apply closing to connect weakly connected regions 
-    double alphaClose = 1.2;
+    double alphaClose = 1.0;
     int diameterClose = static_cast<int>((alphaClose / 100) * std::sqrt(std::pow(binaryFieldImage.rows, 2) + std::pow(binaryFieldImage.cols, 2)));
     cv::Mat structElemClose = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameterClose, diameterClose));
     cv::morphologyEx(openedImage, openedImage, cv::MORPH_CLOSE, structElemClose);
