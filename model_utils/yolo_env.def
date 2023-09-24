@@ -3,6 +3,10 @@ From: ubuntu:20.04
  
  
 %post
+  # Author: Pietro Girotto
+  # ID: 2088245
+  # This file is meant to be used to build a Singularity container
+  # for YOLOv8 training.
   # These first few commands allow us to find the python3-pip package later
   # on.
   apt-get update -y
