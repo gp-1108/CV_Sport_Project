@@ -40,6 +40,3 @@ singularity exec ../OpenCV_Environment/cv_sport_project.sif -c "../models/best.o
 Enrico D'Alberton - Player classification <br>
 Federico Gelain - Playing Field detection and segmentation <br>
 Pietro Girotto - Player segmentation <br>
-
-## Other
-Have a look at the [Road Map](./roadmap.md) to log and remember what is left to do.
