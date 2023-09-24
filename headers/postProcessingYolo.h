@@ -1,12 +1,10 @@
 /**
-* @file postProcessing.h
+* @file postProcessingYolo.h
 * @author Enrico D'Alberton ID number: 2093708
-* @date ---
-* @version 1.0
 */
 
-#ifndef POSTPROCESSING_H
-#define POSTPROCESSING_H
+#ifndef POSTPROCESSINGYOLO_H
+#define POSTPROCESSINGYOLO_H
 
 #include <opencv2/opencv.hpp>
 

@@ -1,3 +1,8 @@
+/**
+* @file yolo.cpp
+* @author Pietro Girotto ID number: 2088245
+*/
+
 #include "../headers/yolo.h"
 #include <opencv2/dnn.hpp>
 #include <opencv2/opencv.hpp>

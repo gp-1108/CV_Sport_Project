@@ -1,8 +1,6 @@
 /**
 * @file performances.h
 * @author Federico Gelain ID number: 2076737
-* @date ---
-* @version 1.0
 */
 
 #ifndef PERFORMANCE_H

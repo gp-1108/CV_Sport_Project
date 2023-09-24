@@ -1,8 +1,6 @@
 /**
 * @file playerAssignement.h
 * @author Enrico D'Alberton ID number: 2093708
-* @date ---
-* @version 1.0
 */
 
 #ifndef PLAYERASSIGNEMENT_H

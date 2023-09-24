@@ -1,3 +1,8 @@
+/**
+* @file yolo.h
+* @author Pietro Girotto ID number: 2088245
+*/
+
 #ifndef YOLONET_H
 #define YOLONET_H
 

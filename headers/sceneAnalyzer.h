@@ -1,8 +1,6 @@
 /**
-* @file fieldSegmentation.h
+* @file sceneAnalyzer.h
 * @author Enrico D'Alberton ID number: 2093708
-* @date ---
-* @version 1.0
 */
 
 #ifndef SCENEANALYZER_H

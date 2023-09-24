@@ -1,3 +1,8 @@
+/**
+* @file main.cpp
+* @author Enrico D'Alberton ID number: 2093708
+*/
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include "../headers/yolo.h"

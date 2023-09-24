@@ -1,8 +1,6 @@
 /**
-* @file fieldSegmentation.h
+* @file fieldSegmentation.cpp
 * @author Federico Gelain ID number: 2076737
-* @date ---
-* @version 1.0
 */
 
 #include "../headers/fieldSegmentation.h"

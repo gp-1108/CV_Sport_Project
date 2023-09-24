@@ -1,9 +1,8 @@
 /**
 * @file playerAssignement.cpp
 * @author Enrico D'Alberton ID number: 2093708
-* @date ---
-* @version 1.0
 */
+
 #include "../headers/playerAssignement.h"
 #include "../headers/postProcessingYolo.h"
 #include "../headers/yolo.h"
