@@ -58,6 +58,9 @@ if __name__ == "__main__":
     os.mkdir(os.path.join(new_dataset_path, "images"))
     os.mkdir(os.path.join(new_dataset_path, "labels"))
 
+  # Copying the annotation file to the dataset
+  os.system("cp ./images_annotations.txt " + dataset_path)
+
   # Opening the file with the annotations
   with open(os.path.join(dataset_path, "images_annotations.txt"), "r") as f:
     lines = f.readlines()
