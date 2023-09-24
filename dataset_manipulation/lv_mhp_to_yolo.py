@@ -98,7 +98,7 @@ if __name__ == "__main__":
           # final_vertices = cu.greatest_poly(polys)                      #
           # final_vertices = cu.all_vertices(polys)                       #
           #################################################################
-          final_vertices = cu.all_vertices(polys)
+          final_vertices = cu.angle_bins_approach(polys, bin_num=55)
 
           if is_draw:
             # Draw the contours
@@ -138,8 +138,8 @@ if __name__ == "__main__":
   train_list = open(train_list, "r").readlines()
   test_list = open(test_list, "r").readlines()
 
-  train_path = os.path.join(dataset_path, "train")
-  test_path = os.path.join(dataset_path, "test")
+  train_path = os.path.join(new_dataset_path, "train")
+  test_path = os.path.join(new_dataset_path, "test")
 
   if not os.path.exists(train_path):
     os.mkdir(train_path)
@@ -150,24 +150,26 @@ if __name__ == "__main__":
     os.mkdir(os.path.join(test_path, "labels"))
 
   for image_name in train_list:
-    image_path = os.path.join(dataset_path, "images", image_name)
-    label_path = os.path.join(dataset_path, "labels", image_name.replace(".jpg", ".txt"))
+    image_name = image_name.strip()
+    image_path = os.path.join(new_dataset_path, "images", image_name)
+    label_path = os.path.join(new_dataset_path, "labels", image_name.replace(".jpg", ".txt"))
 
     # Move image and label in the train folder
     os.rename(image_path, os.path.join(train_path, "images", image_name))
     os.rename(label_path, os.path.join(train_path, "labels", image_name.replace(".jpg", ".txt")))
 
   for image_name in test_list:
-    image_path = os.path.join(dataset_path, "images", image_name)
-    label_path = os.path.join(dataset_path, "labels", image_name.replace(".jpg", ".txt"))
+    image_name = image_name.strip()
+    image_path = os.path.join(new_dataset_path, "images", image_name)
+    label_path = os.path.join(new_dataset_path, "labels", image_name.replace(".jpg", ".txt"))
 
     # Move image and label in the test folder
     os.rename(image_path, os.path.join(test_path, "images", image_name))
     os.rename(label_path, os.path.join(test_path, "labels", image_name.replace(".jpg", ".txt")))
   
   # Remove the old dataset structure
-  os.rmdir(os.path.join(dataset_path, "images"))
-  os.rmdir(os.path.join(dataset_path, "annotations"))
+  os.rmdir(os.path.join(new_dataset_path, "images"))
+  os.rmdir(os.path.join(new_dataset_path, "labels"))
 
   # Adding the dataset yaml file
   with open(os.path.join(new_dataset_path, "dataset.yaml"), "w") as f:

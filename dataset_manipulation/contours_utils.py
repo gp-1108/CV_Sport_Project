@@ -64,6 +64,10 @@ def angle_bins_approach(polys, bin_num=50):
     result: [[x1, y1], [x2, y2], ...] list -> list of vertices of the merged polygon
   """
 
+  # No need to merge if there is only one polygon
+  if len(polys) == 1:
+    return polys[0]
+
   # Computing all vertices and all centroids 
   # for each disconnected component
   all_vertices = []
