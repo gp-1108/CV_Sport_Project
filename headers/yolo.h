@@ -30,7 +30,6 @@ class Yolov8Seg {
      * @brief Destroy the Yolov8Seg object
     */
     ~Yolov8Seg();
-    // [TODO] Add other constructors for different thresholds
 
     /**
      * @brief Run the segmentation on the given image

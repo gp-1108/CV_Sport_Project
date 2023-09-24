@@ -1,8 +1,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
-#include "yolo.h"
-#include "sceneAnalyzer.h"
-#include "performances.h"
+#include "../headers/yolo.h"
+#include "../headers/sceneAnalyzer.h"
+#include "../headers/performances.h"
 
 /**
  * This main can be used on the entire dataset to generate the output files:

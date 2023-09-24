@@ -5,10 +5,10 @@
 * @version 1.0
 */
 
-#include "fieldSegmentation.h"
-#include "yolo.h"
-#include "postProcessingYolo.h"
-#include "playerAssignement.h"
+#include "../headers/fieldSegmentation.h"
+#include "../headers/yolo.h"
+#include "../headers/postProcessingYolo.h"
+#include "../headers/playerAssignement.h"
 #include <opencv2/opencv.hpp>
 #include <fstream>
 #include <iostream>

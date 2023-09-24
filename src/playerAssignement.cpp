@@ -4,9 +4,9 @@
 * @date ---
 * @version 1.0
 */
-#include "playerAssignement.h"
-#include "postProcessingYolo.h"
-#include "yolo.h"
+#include "../headers/playerAssignement.h"
+#include "../headers/postProcessingYolo.h"
+#include "../headers/yolo.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <tuple>

@@ -13,6 +13,3 @@ add_executable(main src/main.cpp
                 src/performances.cpp)
 
 target_link_libraries(main ${OpenCV_LIBS})
-
-add_executable(model_inference src/model_inference.cpp src/yolo.cpp)
-target_link_libraries(model_inference ${OpenCV_LIBS})
