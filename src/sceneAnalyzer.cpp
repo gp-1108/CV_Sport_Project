@@ -30,9 +30,10 @@ void txtCleanUp(const std::string& output_folder_path, const std::string& file_n
     std::vector<std::string> lines;
     std::string line;
     while (std::getline(inputFile, line)) {
-      if (line.size() >= 5) {
-        line.erase(line.size() - 5);
-      }
+      // Fine the last space
+      size_t lastSpace = line.find_last_of(" ");
+      // Substring from the beginning to the last space
+      line = line.substr(0, lastSpace);
       lines.push_back(line);
     }
 
@@ -67,7 +68,7 @@ void sceneAnalyzer(Yolov8Seg& yolo, const std::string& output_folder_path, const
   // Running the segmentation
   cv::Mat processed_mask;
   yolo.runSegmentation(original_image, processed_mask);
-  processed_mask = postProcessingYolo(processed_mask); //TODO modifica direttamente la reference
+  postProcessingYolo(processed_mask);
   assignToTeams(output_folder_path, file_name, original_image, processed_mask, field_mask);
 
 }

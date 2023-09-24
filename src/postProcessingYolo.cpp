@@ -7,7 +7,7 @@
 #include "postProcessingYolo.h"
 #include <opencv2/opencv.hpp>
 
-cv::Mat postProcessingYolo(cv::Mat& playerMask) {
+void postProcessingYolo(cv::Mat& playerMask) {
 
   cv::Mat editedPlayerMask = cv::Mat::zeros(playerMask.size(), CV_8UC1);
 
@@ -65,6 +65,7 @@ cv::Mat postProcessingYolo(cv::Mat& playerMask) {
       editedPlayerMask = editedPlayerMask + copyPlayerMask;
     }
   }
-  return editedPlayerMask;
+  
+  playerMask = editedPlayerMask;
 
 }
