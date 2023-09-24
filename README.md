@@ -21,20 +21,21 @@ cmake ..
 cmake --build .
 ```
 
+For the singularity version:
+```bash
+singularity exec ../OpenCV_Environment/cv_sport_project.sif bash ../OpenCV_Environment/build_command.sh
+```
+
+NOTE: The singularity command both builds and runs the program.
+
 ## Running
 To run the program, run the following command from inside the build directory:
 ```bash
 ./main ../models/best.onnx <path to images folder> <path to output folder>
 ```
 
-For the singularity version:
-```bash
-singularity exec ../OpenCV_Environment/cv_sport_project.sif -c "../models/best.onnx <path to images folder> <path to output folder>"
-```
+To modify the singularity runtime arguments, edit the build_command.sh file.
 
-```bash
-./model_inference <path_to_model> <path_to_image>
-```
 
 ## Authors
 Enrico D'Alberton - Player classification <br>
