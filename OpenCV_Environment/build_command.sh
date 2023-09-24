@@ -4,4 +4,4 @@ mkdir -p opencv_build
 cd opencv_build
 cmake ..
 cmake --build .
-./model_inference ../models/best.onnx ../Images/im1.jpg
+./main ../models/best.onnx ../Sport_scene_dataset ../Model_output
