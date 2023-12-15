@@ -38,6 +38,6 @@ To modify the singularity runtime arguments, edit the build_command.sh file.
 
 
 ## Authors
-Enrico D'Alberton - Player classification <br>
-Federico Gelain - Playing Field detection and segmentation <br>
-Pietro Girotto - Player segmentation <br>
+Enrico D'Alberton (https://github.com/enricopro) - Player classification <br>
+Federico Gelain (https://github.com/FedericoGelain) - Playing Field detection and segmentation <br>
+Pietro Girotto (https://github.com/gp-1108) - Player segmentation <br>
